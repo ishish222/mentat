@@ -1,67 +1,66 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import MentatViewProvider from './mentat-view-provider';
+
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 
-function analyzeCode(code: string): string {
-	let results = `Oh you mean ${code}? Yeah, looks good.`;
-	return results;
-}
-
-function getWebviewContent(analysisResults: string): string {
-	return `<!DOCTYPE html>
-	<html lang="en">
-	<head>
-		<meta charset="UTF-8">
-		<meta
-			name="viewport"
-			content="width=device-width, initial-scale=1.0"
-		>
-		<title>Analysis Results</title>
-	</head>
-	<body>
-		<h1>Analysis Results</h1>
-		<p>${analysisResults}</p>
-	</body>
-	</html>`;
-}
-
 export function activate(context: vscode.ExtensionContext) {
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "mentat" is now active!');
+	console.log('Activating Mentat extension');
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-    let disposable = vscode.commands.registerCommand('mentat.analyze', function () {
-        const activeEditor = vscode.window.activeTextEditor;
-        if (!activeEditor) {
-            return; // No open text editor
-        }
+	const chatViewProvider = new MentatViewProvider(context);
+		
+	context.subscriptions.push(
+		vscode.commands.registerCommand("mentat.analyze", mentantQuery_),
+		vscode.window.registerWebviewViewProvider("mentat.view", chatViewProvider, {
+			webviewOptions: { retainContextWhenHidden: true }
+		})
+	);
 
-        const selection = activeEditor.selection;
-        const text = activeEditor.document.getText(selection);
+	async function mentantQuery_() { 
+		await mentantQuery('Looking for refs to:'); 
+	}
 
-        // Analyze the selected text
-        const analysisResults = analyzeCode(text);
+	async function mentantQuery(userInput: string) {
+		if (!userInput) {
+			return;
+		}
 
-        // Display the results in a WebviewPanel
-        const panel = vscode.window.createWebviewPanel(
-            'analysisResults', // Identifies the type of the webview. Used internally
-            'Analysis Results', // Title of the panel displayed to the user
-            vscode.ViewColumn.One, // Editor column to show the new webview panel in.
-            {} // Webview options. More details can be found in the documentation
-        );
+		let editor = vscode.window.activeTextEditor;
 
-        // Set the content of the webview panel
-        panel.webview.html = getWebviewContent(analysisResults);
-    });
+		let code = ''
 
-    context.subscriptions.push(disposable);}
+		if (editor) {
+			const document = editor.document;
+			const selection = editor.selection;
+			const wordRange = document.getWordRangeAtPosition(selection.start);
+			
+			if (!wordRange) {
+				vscode.window.showInformationMessage('No word is selected.');
+				return;
+			}
+			
+			// Use VS Code's built-in command to execute 'Find All References'
+			const locations = await vscode.commands.executeCommand<vscode.Location[]>(
+				'vscode.executeReferenceProvider',
+				document.uri,
+				wordRange.start
+				);
+
+			if (!locations || locations.length === 0) {
+				vscode.window.showInformationMessage('No references found for the selected word.');
+				return;
+			}
+
+			chatViewProvider.sendOpenAiApiRequest(userInput, locations);
+		}
+	}
+}
+
 
 // This method is called when your extension is deactivated
-export function deactivate() {}
+export function deactivate() {
+}
