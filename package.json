@@ -9,8 +9,7 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [
-  ],
+  "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
@@ -24,7 +23,25 @@
         {
           "when": "editorHasSelection",
           "command": "mentat.analyze",
-          "group": "navigation"
+          "group": "mentat@1"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "mentat",
+          "title": "Mentat",
+          "icon": "resources/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "mentat": [
+        {
+          "type": "webview",
+          "id": "mentat.view",
+          "name": "Mentat"
         }
       ]
     }
@@ -38,14 +55,17 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.86.2",
     "@types/mocha": "^10.0.6",
     "@types/node": "18.x",
+    "@types/vscode": "^1.86.2",
     "@typescript-eslint/eslint-plugin": "^7.0.2",
     "@typescript-eslint/parser": "^7.0.2",
-    "eslint": "^8.56.0",
-    "typescript": "^5.3.3",
     "@vscode/test-cli": "^0.0.6",
-    "@vscode/test-electron": "^2.3.9"
+    "@vscode/test-electron": "^2.3.9",
+    "eslint": "^8.56.0",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "openai": "^4.28.4"
   }
 }
