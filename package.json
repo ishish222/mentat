@@ -21,7 +21,6 @@
     "menus": {
       "editor/context": [
         {
-          "when": "editorHasSelection",
           "command": "mentat.analyze",
           "group": "mentat@1"
         }
