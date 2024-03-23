@@ -25,9 +25,18 @@ async function find_references(document: vscode.Uri, wordRange: vscode.Position)
 	return referenceLocations;
 }
 
-async function findSymbolContainingPosition(symbols: vscode.DocumentSymbol[], position: vscode.Position): Promise<vscode.DocumentSymbol | undefined> {
+function findSymbolContainingPosition(symbols: vscode.DocumentSymbol[], position: vscode.Position): vscode.DocumentSymbol | undefined {
     for (const symbol of symbols) {
-        if (symbol.range.contains(position) && symbol.kind === vscode.SymbolKind.Function) {
+        if (symbol.range.contains(position) && (
+				symbol.kind === vscode.SymbolKind.Function
+				|| symbol.kind === vscode.SymbolKind.Method
+				|| symbol.kind === vscode.SymbolKind.Constructor
+				|| symbol.kind === vscode.SymbolKind.Class
+				|| symbol.kind === vscode.SymbolKind.Interface
+				|| symbol.kind === vscode.SymbolKind.Object
+				|| symbol.kind === vscode.SymbolKind.Struct
+				)
+			) {
             return symbol;
         }
 
@@ -52,7 +61,7 @@ async function find_containing_location(location: vscode.Location) {
 		return;
 	}
 
-	const symbol = await findSymbolContainingPosition(symbols, location.range.start);
+	const symbol = findSymbolContainingPosition(symbols, location.range.start);
 
 	if (!symbol) {
         vscode.window.showErrorMessage('No containing function found for the selected position.');

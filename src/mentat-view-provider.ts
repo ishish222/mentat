@@ -2,6 +2,8 @@ import { OpenAI } from 'openai';
 import * as vscode from 'vscode';
 import { code_explanation_prompt_1 } from './mentat-chains';
 import { ChatOpenAI } from "@langchain/openai";
+import { StringOutputParser } from "@langchain/core/output_parsers";
+
 
 async function extractTextFromLocation(location: vscode.Location): Promise<string | undefined> {
     try {
@@ -84,7 +86,15 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
 
         const prompt_text = `Exmplaining symbol ${prompt}\n\nDefinition: ${definitionText}\n\nUsage 1: ${locationTexts[0]}\n\nUsage 2: ${locationTexts[1]}\n\nUsage 3: ${locationTexts[2]}`;
 
-        this.sendMessageToWebView({ type: 'operator', value: prompt_text, code: '' });
+        this.sendMessageToWebView({ 
+            type: 'operator', 
+            symbol: prompt,
+            definition: definitionText,
+            usage_1: locationTexts[0],
+            usage_2: locationTexts[1],
+            usage_3: locationTexts[2]
+         });
+
 
         try {
             /** querying */
@@ -92,7 +102,8 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
 
             vscode.window.showInformationMessage(`API Key: ${this.apiKey}`);
             this.llm = new ChatOpenAI({openAIApiKey: this.apiKey, modelName: 'gpt-3.5-turbo-16k', temperature: 0.0});
-            this.chain = code_explanation_prompt_1.pipe(this.llm);
+            //this.chain = code_explanation_prompt_1.pipe(this.llm).pipe(new JsonOutputParser());
+            this.chain = code_explanation_prompt_1.pipe(this.llm).pipe(new StringOutputParser());
 
             let response = await this.chain.invoke({
                 code_snippet: prompt, 
@@ -101,9 +112,13 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
                 usage_2: locationTexts[1], 
                 usage_3: locationTexts[2]
             });
-            let content = response.content;
+            //let content = response.content;
+            let content = response;
 
-            this.sendMessageToWebView({ type: 'assistant', value: content });
+            this.sendMessageToWebView({ 
+                type: 'assistant', 
+                value: content
+             });
         } catch (error: any) {
             await vscode.window.showErrorMessage("Error", error);
             return;
