@@ -3,6 +3,20 @@ import * as vscode from 'vscode';
 import { code_explanation_prompt_1 } from './mentat-chains';
 import { ChatOpenAI } from "@langchain/openai";
 
+async function extractTextFromLocation(location: vscode.Location): Promise<string | undefined> {
+    try {
+        // Open the document referred to by the location's URI
+        const document = await vscode.workspace.openTextDocument(location.uri);
+        
+        // Extract the text within the specified range from the document
+        const text = document.getText(location.range);
+        
+        return text;
+    } catch (error) {
+        console.error("Failed to extract text from location:", error);
+        return undefined;
+    }
+}
 export default class MentatViewProvider implements vscode.WebviewViewProvider {
     private webView?: vscode.WebviewView;
     private openAiApi?: OpenAI;
@@ -52,7 +66,11 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
         }
     }
 
-    public async sendOpenAiApiRequest(prompt: string, locations?: Location[]) {
+    public async sendOpenAiApiRequest(
+        prompt: string, 
+        definition: vscode.Location,
+        locations: vscode.Location[]
+    ) {
         await this.ensureApiKey();
 
         if (!this.webView) {
@@ -61,16 +79,13 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
             this.webView?.show?.(true);
         }
     
-        if(locations) {
-            prompt += 'Will query locations:\n';
-            let locations_str = ''
-            locations.forEach(location => {
-                locations_str += `${location.uri.fsPath}:${location.range.start.line + 1}\n`;
-            });
-            prompt += locations_str;
-        }
+        const definitionText = await extractTextFromLocation(definition);
+        const locationTexts = await Promise.all(locations.map(extractTextFromLocation));
 
-        this.sendMessageToWebView({ type: 'operator', value: prompt, code: '' });
+        const prompt_text = `Exmplaining symbol ${prompt}\n\nDefinition: ${definitionText}\n\nUsage 1: ${locationTexts[0]}\n\nUsage 2: ${locationTexts[1]}\n\nUsage 3: ${locationTexts[2]}`;
+
+        this.sendMessageToWebView({ type: 'operator', value: prompt_text, code: '' });
+
         try {
             /** querying */
             this.apiKey = await this.context.globalState.get('chatgpt-api-key') as string;
@@ -79,9 +94,15 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
             this.llm = new ChatOpenAI({openAIApiKey: this.apiKey, modelName: 'gpt-3.5-turbo-16k', temperature: 0.0});
             this.chain = code_explanation_prompt_1.pipe(this.llm);
 
-            let response = await this.chain.invoke({code_snippet: prompt, definition: '', usage_1: '', usage_2: '', usage_3: ''});
+            let response = await this.chain.invoke({
+                code_snippet: prompt, 
+                definition: definitionText, 
+                usage_1: locationTexts[0], 
+                usage_2: locationTexts[1], 
+                usage_3: locationTexts[2]
+            });
             let content = response.content;
-            
+
             this.sendMessageToWebView({ type: 'assistant', value: content });
         } catch (error: any) {
             await vscode.window.showErrorMessage("Error", error);
