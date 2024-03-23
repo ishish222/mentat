@@ -1,13 +1,18 @@
 import { OpenAI } from 'openai';
 import * as vscode from 'vscode';
+import { code_explanation_prompt_1 } from './mentat-chains';
+import { ChatOpenAI } from "@langchain/openai";
 
 export default class MentatViewProvider implements vscode.WebviewViewProvider {
     private webView?: vscode.WebviewView;
     private openAiApi?: OpenAI;
     private apiKey?: string;
     private message?: any;
+    private llm?: ChatOpenAI;
+    private chain?: any;
 
-    constructor(private context: vscode.ExtensionContext) { }
+    constructor(private context: vscode.ExtensionContext) {
+    }
 
     public resolveWebviewView(
         webviewView: vscode.WebviewView,
@@ -68,9 +73,16 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
         this.sendMessageToWebView({ type: 'operator', value: prompt, code: '' });
         try {
             /** querying */
-            let response = 'Ah sodesu ka?';
+            this.apiKey = await this.context.globalState.get('chatgpt-api-key') as string;
 
-            this.sendMessageToWebView({ type: 'assistant', value: response });
+            vscode.window.showInformationMessage(`API Key: ${this.apiKey}`);
+            this.llm = new ChatOpenAI({openAIApiKey: this.apiKey, modelName: 'gpt-3.5-turbo-16k', temperature: 0.0});
+            this.chain = code_explanation_prompt_1.pipe(this.llm);
+
+            let response = await this.chain.invoke({code_snippet: prompt, definition: '', usage_1: '', usage_2: '', usage_3: ''});
+            let content = response.content;
+            
+            this.sendMessageToWebView({ type: 'assistant', value: content });
         } catch (error: any) {
             await vscode.window.showErrorMessage("Error", error);
             return;
