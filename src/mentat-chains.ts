@@ -10,14 +10,6 @@ You are an expert in the field of software development. You are tasked with anal
 
 Your task is to explain what is the purpose of the code snippet. 
 
-you return the explanation in the following format:
-\`\`\`
-        {{
-            "response": {{
-                "description": <str, here write what is the purpose of the snippet>,
-            }}
-        }}
-\`\`\`
 `;
 
 let code_explanation_human_str = `
