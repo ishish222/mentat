@@ -16,6 +16,18 @@
       {
         "command": "mentat.analyze",
         "title": "mentat:analyze"
+      },
+      {
+        "command": "mentat.list_symbols",
+        "title": "mentat:list_symbols"
+      },
+      {
+        "command": "mentat.parse_file",
+        "title": "mentat:parse_file"
+      },
+      {
+        "command": "mentat.flatten_contract",
+        "title": "mentat:flatten_contract"
       }
     ],
     "menus": {
@@ -23,7 +35,20 @@
         {
           "command": "mentat.analyze",
           "group": "mentat@1"
+        },
+        {
+          "command": "mentat.list_symbols",
+          "group": "mentat@1"
+        },
+        {
+          "command": "mentat.parse_file",
+          "group": "mentat@1"
+        },
+        {
+          "command": "mentat.flatten_contract",
+          "group": "mentat@1"
         }
+
       ]
     },
     "viewsContainers": {
@@ -68,6 +93,8 @@
     "@langchain/community": "^0.0.40",
     "@langchain/core": "^0.1.48",
     "dotenv": "^16.4.5",
-    "openai": "^4.28.4"
+    "openai": "^4.28.4",
+    "@solidity-parser/parser": "^0.18.0",
+    "solidity-workspace": "^0.2.1"
   }
 }
