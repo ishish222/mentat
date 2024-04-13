@@ -1,9 +1,8 @@
-import { OpenAI } from 'openai';
 import * as vscode from 'vscode';
-import { code_explanation_prompt_1 } from './mentat-chains';
-import { ChatOpenAI } from "@langchain/openai";
+import { code_explanation_prompt_1, contract_breakdown_prompt_1 } from './mentat-chains';
 import { StringOutputParser } from "@langchain/core/output_parsers";
-
+import { ChatPromptTemplate } from '@langchain/core/prompts';
+import { Mentat } from './mentat';
 
 async function extractTextFromLocation(location: vscode.Location): Promise<string | undefined> {
     try {
@@ -19,15 +18,12 @@ async function extractTextFromLocation(location: vscode.Location): Promise<strin
         return undefined;
     }
 }
+
 export default class MentatViewProvider implements vscode.WebviewViewProvider {
     private webView?: vscode.WebviewView;
-    private openAiApi?: OpenAI;
-    private apiKey?: string;
     private message?: any;
-    private llm?: ChatOpenAI;
-    private chain?: any;
 
-    constructor(private context: vscode.ExtensionContext) {
+    constructor(private context: vscode.ExtensionContext, private mentat: Mentat) {
     }
 
     public resolveWebviewView(
@@ -45,29 +41,42 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
 
         webviewView.webview.onDidReceiveMessage(data => {
             if (data.type === 'queryMentat') {
-                this.sendOpenAiApiRequest(data.value);
+                this.mentat.queryMentat(data.value);
             }
         });
 
-        if (this.message !== null) {
+        if (this.message !== null) { //what does this do?
             this.sendMessageToWebView(this.message);
             this.message = null;
         }
     }
 
-    public async ensureApiKey() {
-        this.apiKey = await this.context.globalState.get('chatgpt-api-key') as string;
-
-        if (!this.apiKey) {
-            const apiKeyInput = await vscode.window.showInputBox({
-                prompt: "Please enter your OpenAI API Key, can be located at https://openai.com/account/api-keys",
-                ignoreFocusOut: true,
-            });
-            this.apiKey = apiKeyInput!;
-            this.context.globalState.update('chatgpt-api-key', this.apiKey);
+    public async explainFlattenedContract(flattened_contract: string) {
+        // focus on mentat view
+        if (!this.webView) {
+            await vscode.commands.executeCommand('mentat.view.focus');
+        } else {
+            this.webView?.show?.(true);
         }
+
+        let message = `Requesting explanation for flattened contract:\n\n${flattened_contract}`;
+        
+        this.sendMessageToWebView({ 
+            type: 'operator', 
+            value: message
+        });
+
+        console.log('parsing flattened contract')
+        let output = await this.mentat.parseFlattenedContract(flattened_contract);
+        console.log('output:', output);
+
+        this.sendMessageToWebView({ 
+            type: 'assistant', 
+            value: output
+        });
     }
 
+    /** 
     public async sendOpenAiApiRequest(
         prompt: string, 
         definition: vscode.Location,
@@ -82,22 +91,54 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
         }
     
         const definitionText = await extractTextFromLocation(definition);
-        const locationTexts = await Promise.all(locations.map(extractTextFromLocation));
 
-        const prompt_text = `Exmplaining symbol ${prompt}\n\nDefinition: ${definitionText}\n\nUsage 1: ${locationTexts[0]}\n\nUsage 2: ${locationTexts[1]}\n\nUsage 3: ${locationTexts[2]}`;
+        const uniqueLocations = Array.from(new Set(locations));
+        const locationTexts = await Promise.all(uniqueLocations.map(extractTextFromLocation));
 
-        this.sendMessageToWebView({ 
-            type: 'operator', 
-            symbol: prompt,
-            definition: definitionText,
-            usage_1: locationTexts[0],
-            usage_2: locationTexts[1],
-            usage_3: locationTexts[2]
-         });
 
+        if(locationTexts.length > 2) {
+            const prompt_text = `Explaining symbol ${prompt}\n\n
+                Definition: ${definitionText}\n\n
+                Usage 1: ${locationTexts[0]}\n\n
+                Usage 2: ${locationTexts[1]}\n\n
+                Usage 3: ${locationTexts[2]}`;
+
+            this.sendMessageToWebView({ 
+                type: 'operator', 
+                symbol: prompt,
+                definition: definitionText,
+                usage_1: locationTexts[0],
+                usage_2: locationTexts[1],
+                usage_3: locationTexts[2]
+            });
+        } else if(locationTexts.length > 1) {
+            const prompt_text = `Explaining symbol ${prompt}\n\n
+                Definition: ${definitionText}\n\n
+                Usage 1: ${locationTexts[0]}\n\n
+                Usage 2: ${locationTexts[1]}`;
+
+            this.sendMessageToWebView({ 
+                type: 'operator', 
+                symbol: prompt,
+                definition: definitionText,
+                usage_1: locationTexts[0],
+                usage_2: locationTexts[1]
+            });
+        } else if(locationTexts.length == 1) {
+            const prompt_text = `Explaining symbol ${prompt}\n\n
+                Definition: ${definitionText}\n\n
+                Usage 1: ${locationTexts[0]}`;
+
+            this.sendMessageToWebView({ 
+                type: 'operator', 
+                symbol: prompt,
+                definition: definitionText,
+                usage_1: locationTexts[0]
+            });
+        }      
 
         try {
-            /** querying */
+
             this.apiKey = await this.context.globalState.get('chatgpt-api-key') as string;
 
             vscode.window.showInformationMessage(`API Key: ${this.apiKey}`);
@@ -123,7 +164,7 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
             await vscode.window.showErrorMessage("Error", error);
             return;
         }
-    }
+    }*/
 
     public sendMessageToWebView(message: any) {
         if (this.webView) {

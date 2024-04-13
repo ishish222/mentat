@@ -14,4 +14,18 @@ export async function getSurroundingCode(uri: vscode.Uri, position: vscode.Posit
     return text;
 }
 
-
+export function uniqueLocations(locations: vscode.Location[]): vscode.Location[] {
+    const uniqueKey = (loc: vscode.Location) => `${loc.uri.toString()}:${loc.range.start.line}-${loc.range.end.line}`;
+    const seen = new Set();
+    const unique = [];
+  
+    for (const loc of locations) {
+      const key = uniqueKey(loc);
+      if (!seen.has(key)) {
+        seen.add(key);
+        unique.push(loc);
+      }
+    }
+  
+    return unique.slice(0, 3); // Limit to 3 locations
+  }
