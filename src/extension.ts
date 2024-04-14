@@ -4,6 +4,12 @@ import * as vscode from 'vscode';
 import MentatViewProvider from './mentat-view-provider';
 const workspace = require("solidity-workspace");
 import { Mentat } from './mentat';
+import { NodeDependenciesProvider } from './tree-view-provider';
+
+process.env["LANGCHAIN_TRACING_V2"] = "true";
+process.env["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com";
+process.env["LANGCHAIN_API_KEY"] = "ls__2435653e5df148fbbbe4266969dc6a7b"; // IDK why cwd is being set to /, dotenv is not working
+process.env["LANGCHAIN_PROJECT"] = "mentat";
 
 type ExtendedDocumentSymbol = vscode.DocumentSymbol & {
 	explained: boolean;
@@ -69,6 +75,7 @@ async function query(
 ): Promise<void> {
 }
 
+
 async function parse_file() {
 	const ws = new workspace.Workspace();
 
@@ -86,9 +93,11 @@ async function parse_file() {
                     console.error(`ERROR: could not find parsed sourceUnit for file ${current_document.uri.fsPath}`)
                     return;
                 }
-				let flat = sourceUnit.flatten();
-				console.log('Flattened source unit:');	
-				console.log(flat);
+				console.log('Parsed source unit:');	
+				for (let su of Object.values(ws.sourceUnits)) {
+					console.log(su.ast);
+				}
+
 			})
 			.catch((error: any) => {
 				console.error('Error adding file to the workspace.');
@@ -103,10 +112,20 @@ async function parse_file() {
 
 export function activate(context: vscode.ExtensionContext) {
 
+	console.log('Loading Mentat extension...');
+
 	console.log('Activating Mentat extension');
 
-	const chatViewProvider = new MentatViewProvider(context, new Mentat(context));
-		
+	/*** Tree view tests */
+	const rootPath =
+  		vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0
+		? vscode.workspace.workspaceFolders[0].uri.fsPath
+		: undefined;
+	let treeDataProvider = new NodeDependenciesProvider(rootPath);
+	vscode.window.createTreeView('mentat.treeview', {treeDataProvider: treeDataProvider});
+
+	const chatViewProvider = new MentatViewProvider(context, treeDataProvider, new Mentat(context));
+
 	context.subscriptions.push(
 		vscode.commands.registerCommand("mentat.analyze", query_), // remove
 		vscode.commands.registerCommand("mentat.parse_file", parse_file),

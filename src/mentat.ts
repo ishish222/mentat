@@ -4,6 +4,7 @@ import { ChatOpenAI } from "@langchain/openai";
 import { ChatOpenRouter } from "./openrouter";
 import { parse_flattened_prompt } from './prompts/flattening_prompt';
 import { StringOutputParser } from "@langchain/core/output_parsers";
+import { JsonOutputParser } from "@langchain/core/output_parsers";
 
 export class Mentat {
     private openAiApi?: OpenAI;
@@ -30,8 +31,8 @@ export class Mentat {
     private async ensureLLM() {
         if(!this.llm) {
             await this.ensureApiKey();
-            //this.llm = new ChatOpenAI({openAIApiKey: this.apiKey, modelName: 'gpt-3.5-turbo-16k', temperature: 0.0});
-            this.llm = new ChatOpenRouter('gpt-3.5-turbo-16k', this.apiKey);
+            //this.llm = new ChatOpenRouter('gpt-3.5-turbo-16k', this.apiKey);
+            this.llm = new ChatOpenRouter('gpt-4-turbo', this.apiKey);
         }
     }
 
@@ -46,14 +47,15 @@ export class Mentat {
         return 'test';    
     }
 
-    public async parseFlattenedContract(flattened_contract: string): Promise<string> {
+    public async parseFlattenedContract(flattened_contract: string): Promise<Object> {
         await this.ensureLLM();
         if(this.llm) {
             // select the proper prompt
             // combine into a chain with output parser
             let prompt = parse_flattened_prompt;
             let llm = this.llm;
-            let output_parser = new StringOutputParser();
+            //let output_parser = new StringOutputParser();
+            let output_parser = new JsonOutputParser();
             let chain = prompt.pipe(llm).pipe(output_parser);
 
             // invoke the chain
@@ -64,6 +66,6 @@ export class Mentat {
             // return the response
             return response;
         }
-        return 'test';    
+        return 'LLM error';    
     }
 }
