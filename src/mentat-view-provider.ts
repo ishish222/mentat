@@ -1,11 +1,16 @@
 import * as vscode from 'vscode';
 import { Mentat } from './mentat';
+import { NodeDependenciesProvider } from './tree-view-provider';
 
 export default class MentatViewProvider implements vscode.WebviewViewProvider {
     private webView?: vscode.WebviewView;
     private message?: any;
 
-    constructor(private context: vscode.ExtensionContext, private mentat: Mentat) {
+    constructor(
+        private context: vscode.ExtensionContext, 
+        private treeDataProvider: NodeDependenciesProvider,
+        private mentat: Mentat
+    ) {
     }
 
     public resolveWebviewView(
@@ -41,7 +46,8 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
             this.webView?.show?.(true);
         }
 
-        let message = `Requesting explanation for flattened contract:\n\n${flattened_contract}`;
+        //let message = `Requesting explanation for flattened contract:\n\n${flattened_contract}`;
+        let message = `Requesting explanation of the flattened contract.`;
         
         this.sendMessageToWebView({ 
             type: 'operator', 
@@ -50,11 +56,14 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
 
         console.log('parsing flattened contract')
         let output = await this.mentat.parseFlattenedContract(flattened_contract);
-        console.log('output:', output);
+        let text_output = JSON.stringify(output, null, 2);
+        console.log('output:', text_output);
+        this.treeDataProvider.loadDependencies(output);
+        this.treeDataProvider.refresh();
 
         this.sendMessageToWebView({ 
             type: 'assistant', 
-            value: output
+            value: text_output
         });
     }
 
@@ -70,6 +79,7 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
 
         const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'resources', 'mentat.js'));
         const stylesMainUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'resources', 'mentat.css'));
+        const scriptIcon = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'resources', 'icon_white.svg'));
 
         return `<!DOCTYPE html>
 			<html lang="en">
@@ -84,11 +94,8 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
 				<div class="flex flex-col h-screen">
 					<div class="flex-1 overflow-y-auto" id="chat-history"></div>
 					<div id="in-progress" class="p-4 flex items-center hidden">
-                        <div style="text-align: center;">
-                            <div>In progress...</div>
-                            <div class="loader"></div>
-                        </div>
-					</div>
+                        <img class="loader-svg" src="${scriptIcon}" alt="Description of SVG"/>
+                    </div>
 					<div class="p-4 flex items-center">
 						<div class="flex-1">
 							<textarea type="text" rows="2" class="border p-2 w-full" id="question-input"></textarea>

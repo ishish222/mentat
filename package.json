@@ -48,7 +48,6 @@
           "command": "mentat.flatten_contract",
           "group": "mentat@1"
         }
-
       ]
     },
     "viewsContainers": {
@@ -65,7 +64,11 @@
         {
           "type": "webview",
           "id": "mentat.view",
-          "name": "Mentat"
+          "name": "Chat"
+        },
+        {
+          "id": "mentat.treeview",
+          "name": "Tree View"
         }
       ]
     }
@@ -92,9 +95,10 @@
   "dependencies": {
     "@langchain/community": "^0.0.40",
     "@langchain/core": "^0.1.48",
-    "dotenv": "^16.4.5",
-    "openai": "^4.28.4",
     "@solidity-parser/parser": "^0.18.0",
+    "dotenv": "^16.4.5",
+    "langsmith": "^0.1.14",
+    "openai": "^4.28.4",
     "solidity-workspace": "^0.2.1"
   }
 }
