@@ -69,6 +69,11 @@
         {
           "id": "mentat.treeview",
           "name": "Tree View"
+        },
+        {
+          "type": "webview",
+          "id": "mentat.explanation",
+          "name": "Explanation View"
         }
       ]
     }

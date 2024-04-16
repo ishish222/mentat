@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { Mentat } from './mentat';
-import { NodeDependenciesProvider } from './tree-view-provider';
+import { ExplanationNodeProvider } from './tree-view-provider';
+import { ExplanationWebview } from './explanation-view-provider';
 
 export default class MentatViewProvider implements vscode.WebviewViewProvider {
     private webView?: vscode.WebviewView;
@@ -8,7 +9,7 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
 
     constructor(
         private context: vscode.ExtensionContext, 
-        private treeDataProvider: NodeDependenciesProvider,
+        private treeDataProvider: ExplanationNodeProvider,
         private mentat: Mentat
     ) {
     }
@@ -47,7 +48,7 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
         }
 
         //let message = `Requesting explanation for flattened contract:\n\n${flattened_contract}`;
-        let message = `Requesting explanation of the flattened contract.`;
+        let message = `Requesting mapping of the flattened contract.`;
         
         this.sendMessageToWebView({ 
             type: 'operator', 
@@ -58,7 +59,8 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
         let output = await this.mentat.parseFlattenedContract(flattened_contract);
         let text_output = JSON.stringify(output, null, 2);
         console.log('output:', text_output);
-        this.treeDataProvider.loadDependencies(output);
+        this.treeDataProvider.clearExplanationNodes();
+        this.treeDataProvider.loadExplanationNodes(output);
         this.treeDataProvider.refresh();
 
         this.sendMessageToWebView({ 
