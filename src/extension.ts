@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 import MentatViewProvider from './mentat-view-provider';
 const workspace = require("solidity-workspace");
 import { Mentat } from './mentat';
-import { ExplanationNodeProvider } from './tree-view-provider';
+import { ExplanationNodeProvider, ExplanationNode } from './tree-view-provider';
 import { ExplanationWebview } from './explanation-view-provider';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
@@ -15,14 +15,13 @@ type ExtendedDocumentSymbol = vscode.DocumentSymbol & {
 	refers: ExtendedDocumentSymbol[];
   };
 
-async function flatten_contract(
+async function map_and_flatten(
 	document: vscode.TextDocument,
 ): Promise<string | void> {
 	const ws = new workspace.Workspace();
 	const current_document = document;
 
 	if (current_document) {
-		vscode.window.showInformationMessage(`Flattening contract in file ${current_document.uri.fsPath}.`);
 		try {
 			await ws.add(current_document.uri.fsPath, { content: current_document.getText() });
 			await ws.withParserReady();
@@ -59,13 +58,13 @@ async function explain(
 		return;
 	}
 
-	const flatten_contract_result = await flatten_contract(current_document);
-	if (!flatten_contract_result) {
+	const map_and_flatten_result = await map_and_flatten(current_document);
+	if (!map_and_flatten_result) {
 		vscode.window.showErrorMessage('Error flattening contract.');
 		return;
 	}
 
-	chatViewProvider.explainFlattenedContract(flatten_contract_result);
+	chatViewProvider.explainFlattenedContract(map_and_flatten_result);
 }
 
 async function query(
@@ -131,14 +130,20 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.commands.registerCommand("mentat.analyze", query_), // remove
 		vscode.commands.registerCommand("mentat.parse_file", parse_file),
-		vscode.commands.registerCommand("mentat.flatten_contract", explain_),
-		vscode.commands.registerCommand('node.select', (node) => {
+		vscode.commands.registerCommand("mentat.map_and_flatten", explain_),
+		vscode.commands.registerCommand("node.select", (node) => {
 			explanationViewProvider.updateContent(node.explanation || "No explanation available.");
 		}),
+		vscode.commands.registerCommand("mentat.explain", (node) => explain__(node)),
 		vscode.window.registerWebviewViewProvider("mentat.view", chatViewProvider, {
 			webviewOptions: { retainContextWhenHidden: true }
 		}),
 	);
+
+		
+	async function explain__(node: ExplanationNode) {
+		await chatViewProvider.explainNode(node);
+	}
 
 	async function explain_() {
 		await explain(chatViewProvider);

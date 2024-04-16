@@ -22,6 +22,18 @@ export class ExplanationNodeProvider implements vscode.TreeDataProvider<Explanat
       title: 'Show Explanation', 
       arguments: [element]
     };
+    if(element.explained) {
+      element.iconPath = {
+        light: this.context.asAbsolutePath(path.join('resources', 'light', 'explained-icon.svg')),
+        dark: this.context.asAbsolutePath(path.join('resources', 'dark', 'explained-icon.svg'))
+      };
+    }
+    else {
+      element.iconPath = {
+        light: this.context.asAbsolutePath(path.join('resources', 'light', 'unexplained-icon.svg')),
+        dark: this.context.asAbsolutePath(path.join('resources', 'dark', 'unexplained-icon.svg'))
+      };
+    }
     return element;
   }
 
@@ -49,7 +61,7 @@ export class ExplanationNodeProvider implements vscode.TreeDataProvider<Explanat
   loadExplanationNodes(components: any): void {
     // first loop -> listing all components
     for (const [key, value] of Object.entries(components.components)) {      
-      let node: ExplanationNodeEntry = new ExplanationNodeEntry(
+      let node: ExplanationNode = new ExplanationNode(
         key,
         vscode.TreeItemCollapsibleState.Collapsed,
         [],
@@ -59,7 +71,7 @@ export class ExplanationNodeProvider implements vscode.TreeDataProvider<Explanat
       );
 
       value.needs.forEach((dep: string) => {
-        node.children.push(new ExplanationNodeEntry(
+        node.children.push(new ExplanationNode(
           dep,
           vscode.TreeItemCollapsibleState.None,
           [],
@@ -74,86 +86,40 @@ export class ExplanationNodeProvider implements vscode.TreeDataProvider<Explanat
     // second loop -> linking needed components
 
     for (let node of this.tree) { 
-      console.log('Updating needs of node:', node.label);
+      //console.log('Updating needs of node:', node.label);
       for (let need of node.children) {
-        console.log('Checking need:', need.label);
+        //console.log('Checking need:', need.label);
         let needed_node = this.tree.find((element) => element.label === need.label);
         if(needed_node) {
-          console.log('Found needed node:', needed_node.label);
+          //console.log('Found needed node:', needed_node.label);
             const index = node.children.indexOf(need);
             if (index !== -1) {
             node.children[index] = needed_node;
             }
         }
       }
+    }
 
     // third loop -> collapsible or not
     for (let node of this.tree) { 
-      console.log('Updating collapsible state of node:', node.label);
+      //console.log('Updating collapsible state of node:', node.label);
       if (node.children.length > 0) {
         node.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
       } else {
         node.collapsibleState = vscode.TreeItemCollapsibleState.None;
       }
-      console.log('Updating icon of node:', node.label);
+      //console.log('Updating icon of node:', node.label);
       node.iconPath = {
         light: this.context.asAbsolutePath(path.join('resources', 'light', 'unexplained-icon.svg')),
         dark: this.context.asAbsolutePath(path.join('resources', 'dark', 'unexplained-icon.svg'))
       };
-      console.log('Updated icon:', this.context.asAbsolutePath(path.join('resources', 'dark', 'ExplanationNode.svg')));
+      //console.log('Updated icon:', this.context.asAbsolutePath(path.join('resources', 'dark', 'ExplanationNode.svg')));
     }
-    /*
-    for (let node of this.tree) { 
-      console.log('Updating needs of node:', node.label);
-      let needs_node = node.children.find((element) => element.label === 'needs ->');
-      if(!needs_node) {
-        console.log('Could not find needs node for:', node.label);
-        continue;
-      }
-      for (let need of needs_node.children) {
-        console.log('Checking need:', need.label);
-        let needed_node = this.tree.find((element) => element.label === need.label);
-        if(needed_node) {
-          console.log('Found needed node:', needed_node.label);
-            const index = needs_node.children.indexOf(need);
-            if (index !== -1) {
-            needs_node.children[index] = needed_node;
-            }
-        }
-      }
-    }*/
   }
 }
 
-class ExplanationNode extends vscode.TreeItem {
-  constructor(
-    public readonly label: string,
-    public readonly collapsibleState: vscode.TreeItemCollapsibleState,
-    public readonly children: ExplanationNode[] = [],
-  ) {
-    super(label, collapsibleState);
-    this.tooltip = `${this.label}`;
-    //this.description = this.explanation;
-  }
 
-  iconPath = {
-    light: path.join(__filename, '..', '..', 'resources', 'light', 'ExplanationNode.svg'),
-    dark: path.join(__filename, '..', '..', 'resources', 'dark', 'ExplanationNode.svg')
-  };
-}
-
-/*
-const iconPathUnxplained = {
-  light: vscode.context.asAbsolutePath(path.join('resources', 'light', 'unexplained-icon.svg')),
-  dark: path.join(__filename, '..', 'resources', 'dark', 'unexplained-icon.svg')
-};
-
-const iconPathExplained = {
-  light: path.join(__filename, '..', 'resources', 'light', 'explained-icon.svg'),
-  dark: path.join(__filename, '..', 'resources', 'dark', 'explained-icon.svg')
-};*/
-
-class ExplanationNodeEntry extends ExplanationNode {
+export class ExplanationNode extends vscode.TreeItem {
   constructor(
     public label: string,
     public collapsibleState: vscode.TreeItemCollapsibleState,
@@ -163,7 +129,7 @@ class ExplanationNodeEntry extends ExplanationNode {
     public explained: boolean = false
   ) {
     super(label, collapsibleState);
+    this.contextValue = 'explanationNode';
   }
-  
 }
 
