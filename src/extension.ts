@@ -15,7 +15,7 @@ type ExtendedDocumentSymbol = vscode.DocumentSymbol & {
 	refers: ExtendedDocumentSymbol[];
   };
 
-async function map_and_flatten(
+async function flatten(
 	document: vscode.TextDocument,
 ): Promise<string | void> {
 	const ws = new workspace.Workspace();
@@ -43,7 +43,7 @@ async function map_and_flatten(
 		console.error('No active document found.');
 }
 
-async function explain(
+async function flatten_and_map(
 	chatViewProvider: MentatViewProvider,
 ): Promise<void> {
 	const current_document = vscode.window.activeTextEditor?.document;
@@ -58,53 +58,18 @@ async function explain(
 		return;
 	}
 
-	const map_and_flatten_result = await map_and_flatten(current_document);
-	if (!map_and_flatten_result) {
+	const flatten_and_map_result = await flatten(current_document);
+	if (!flatten_and_map_result) {
 		vscode.window.showErrorMessage('Error flattening contract.');
 		return;
 	}
 
-	chatViewProvider.explainFlattenedContract(map_and_flatten_result);
+	chatViewProvider.explainFlattenedContract(flatten_and_map_result);
 }
 
 async function query(
 	chatViewProvider: MentatViewProvider,
 ): Promise<void> {
-}
-
-
-async function parse_file() {
-	const ws = new workspace.Workspace();
-
-	if (vscode.workspace.workspaceFolders) {
-		console.log('Loading workspace...');
-		//ws.loadWorkspace(vscode.workspace.workspaceFolders[0].uri.fsPath);
-		
-		const current_document = vscode.window.activeTextEditor?.document;
-		if (current_document) {
-			console.log(`Adding file ${current_document.uri.fsPath} to the workspace.`);
-			ws.add(current_document.uri.fsPath, { content: current_document.getText() });
-			ws.withParserReady().then(() => {
-				let sourceUnit = ws.get(current_document.uri.fsPath);
-				if (!sourceUnit) {
-                    console.error(`ERROR: could not find parsed sourceUnit for file ${current_document.uri.fsPath}`)
-                    return;
-                }
-				console.log('Parsed source unit:');	
-				for (let su of Object.values(ws.sourceUnits)) {
-					console.log(su.ast);
-				}
-
-			})
-			.catch((error: any) => {
-				console.error('Error adding file to the workspace.');
-			});
-		}
-	}
-	else
-		vscode.window.showErrorMessage('No workspace folder found.');
-
-	console.log('Parsing file...');
 }
 
 export function activate(context: vscode.ExtensionContext) {
@@ -128,9 +93,7 @@ export function activate(context: vscode.ExtensionContext) {
 	vscode.window.registerWebviewViewProvider('mentat.explanation', explanationViewProvider);
 
 	context.subscriptions.push(
-		vscode.commands.registerCommand("mentat.analyze", query_), // remove
-		vscode.commands.registerCommand("mentat.parse_file", parse_file),
-		vscode.commands.registerCommand("mentat.map_and_flatten", explain_),
+		vscode.commands.registerCommand("mentat.flatten_and_map", flatten_and_map_),
 		vscode.commands.registerCommand("node.select", (node) => {
 			explanationViewProvider.updateContent(node.explanation || "No explanation available.");
 		}),
@@ -145,8 +108,8 @@ export function activate(context: vscode.ExtensionContext) {
 		await chatViewProvider.explainNode(node);
 	}
 
-	async function explain_() {
-		await explain(chatViewProvider);
+	async function flatten_and_map_() {
+		await flatten_and_map(chatViewProvider);
 	}
 
 	async function query_() { 

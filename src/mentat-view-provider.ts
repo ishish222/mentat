@@ -58,14 +58,14 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
         console.log('parsing flattened contract')
         let output = await this.mentat.parseFlattenedContract(flattened_contract);
         let text_output = JSON.stringify(output, null, 2);
-        console.log('output:', text_output);
+        //console.log('output:', text_output);
         this.treeDataProvider.clearExplanationNodes();
         this.treeDataProvider.loadExplanationNodes(output);
         this.treeDataProvider.refresh();
 
         this.sendMessageToWebView({ 
             type: 'assistant', 
-            value: text_output
+            value: 'Mapping retrieved'
         });
     }
 
