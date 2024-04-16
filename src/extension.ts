@@ -6,6 +6,8 @@ const workspace = require("solidity-workspace");
 import { Mentat } from './mentat';
 import { ExplanationNodeProvider } from './tree-view-provider';
 import { ExplanationWebview } from './explanation-view-provider';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
 
 type ExtendedDocumentSymbol = vscode.DocumentSymbol & {
 	explained: boolean;
@@ -107,8 +109,9 @@ async function parse_file() {
 }
 
 export function activate(context: vscode.ExtensionContext) {
-
-	console.log('Loading Mentat extension...');
+	// Load environment variables (for Langsmith API key, etc.)
+	console.log('Loading .env');
+	dotenv.config({ path: path.resolve(context.extensionPath, '.env') });
 
 	console.log('Activating Mentat extension');
 
@@ -117,7 +120,7 @@ export function activate(context: vscode.ExtensionContext) {
   		vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0
 		? vscode.workspace.workspaceFolders[0].uri.fsPath
 		: undefined;
-	let treeDataProvider = new ExplanationNodeProvider(rootPath);
+	let treeDataProvider = new ExplanationNodeProvider(context, rootPath);
 	vscode.window.createTreeView('mentat.treeview', {treeDataProvider: treeDataProvider});
 
 	const chatViewProvider = new MentatViewProvider(context, treeDataProvider, new Mentat(context));

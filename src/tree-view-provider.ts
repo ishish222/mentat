@@ -11,7 +11,10 @@ export class ExplanationNodeProvider implements vscode.TreeDataProvider<Explanat
     this._onDidChangeTreeData.fire();
   }
   
-  constructor(private workspaceRoot: string) {}
+  constructor(
+    private context: vscode.ExtensionContext, 
+    private workspaceRoot: string
+  ) {}
 
   getTreeItem(element: ExplanationNode): vscode.TreeItem {
     element.command = { 
@@ -46,40 +49,60 @@ export class ExplanationNodeProvider implements vscode.TreeDataProvider<Explanat
   loadExplanationNodes(components: any): void {
     // first loop -> listing all components
     for (const [key, value] of Object.entries(components.components)) {      
-      let explanation_node = new ExplanationNode(
-        'explanation ->',
-        vscode.TreeItemCollapsibleState.None,
-        [],
-      );
-
-      let needs_nodes : ExplanationNode[] = [];
-
-      value.needs.forEach((dep: string) => {
-        needs_nodes.push(new ExplanationNode(
-          dep,
-          vscode.TreeItemCollapsibleState.None,
-          [],
-        ));
-      });
-
-      let needs_node = new ExplanationNode(
-        'needs ->',
-        needs_nodes.length > 0 ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None,
-        needs_nodes,
-      );
-
       let node: ExplanationNodeEntry = new ExplanationNodeEntry(
         key,
         vscode.TreeItemCollapsibleState.Collapsed,
-        [needs_node, explanation_node],
+        [],
         [],
         '',
         false
       );
-      node
+
+      value.needs.forEach((dep: string) => {
+        node.children.push(new ExplanationNodeEntry(
+          dep,
+          vscode.TreeItemCollapsibleState.None,
+          [],
+          [],
+          '',
+          false
+        ));
+      });
+
       this.tree.push(node);
     }
     // second loop -> linking needed components
+
+    for (let node of this.tree) { 
+      console.log('Updating needs of node:', node.label);
+      for (let need of node.children) {
+        console.log('Checking need:', need.label);
+        let needed_node = this.tree.find((element) => element.label === need.label);
+        if(needed_node) {
+          console.log('Found needed node:', needed_node.label);
+            const index = node.children.indexOf(need);
+            if (index !== -1) {
+            node.children[index] = needed_node;
+            }
+        }
+      }
+
+    // third loop -> collapsible or not
+    for (let node of this.tree) { 
+      console.log('Updating collapsible state of node:', node.label);
+      if (node.children.length > 0) {
+        node.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
+      } else {
+        node.collapsibleState = vscode.TreeItemCollapsibleState.None;
+      }
+      console.log('Updating icon of node:', node.label);
+      node.iconPath = {
+        light: this.context.asAbsolutePath(path.join('resources', 'light', 'unexplained-icon.svg')),
+        dark: this.context.asAbsolutePath(path.join('resources', 'dark', 'unexplained-icon.svg'))
+      };
+      console.log('Updated icon:', this.context.asAbsolutePath(path.join('resources', 'dark', 'ExplanationNode.svg')));
+    }
+    /*
     for (let node of this.tree) { 
       console.log('Updating needs of node:', node.label);
       let needs_node = node.children.find((element) => element.label === 'needs ->');
@@ -98,7 +121,7 @@ export class ExplanationNodeProvider implements vscode.TreeDataProvider<Explanat
             }
         }
       }
-    }
+    }*/
   }
 }
 
@@ -119,16 +142,28 @@ class ExplanationNode extends vscode.TreeItem {
   };
 }
 
+/*
+const iconPathUnxplained = {
+  light: vscode.context.asAbsolutePath(path.join('resources', 'light', 'unexplained-icon.svg')),
+  dark: path.join(__filename, '..', 'resources', 'dark', 'unexplained-icon.svg')
+};
+
+const iconPathExplained = {
+  light: path.join(__filename, '..', 'resources', 'light', 'explained-icon.svg'),
+  dark: path.join(__filename, '..', 'resources', 'dark', 'explained-icon.svg')
+};*/
+
 class ExplanationNodeEntry extends ExplanationNode {
   constructor(
-    public readonly label: string,
-    public readonly collapsibleState: vscode.TreeItemCollapsibleState,
-    public readonly children: ExplanationNode[] = [],
+    public label: string,
+    public collapsibleState: vscode.TreeItemCollapsibleState,
+    public children: ExplanationNode[] = [],
     public needed: Array<string> = [],
     public explanation: string,
     public explained: boolean = false
   ) {
     super(label, collapsibleState);
   }
+  
 }
 
