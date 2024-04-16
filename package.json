@@ -14,42 +14,18 @@
   "contributes": {
     "commands": [
       {
-        "command": "mentat.analyze",
-        "title": "mentat:analyze"
-      },
-      {
         "command": "mentat.explain",
         "title": "mentat:explain"
       },
       {
-        "command": "mentat.list_symbols",
-        "title": "mentat:list_symbols"
-      },
-      {
-        "command": "mentat.parse_file",
-        "title": "mentat:parse_file"
-      },
-      {
-        "command": "mentat.map_and_flatten",
-        "title": "mentat:map_and_flatten"
+        "command": "mentat.flatten_and_map",
+        "title": "mentat:flatten_and_map"
       }
     ],
     "menus": {
       "editor/context": [
         {
-          "command": "mentat.analyze",
-          "group": "mentat@1"
-        },
-        {
-          "command": "mentat.list_symbols",
-          "group": "mentat@1"
-        },
-        {
-          "command": "mentat.parse_file",
-          "group": "mentat@1"
-        },
-        {
-          "command": "mentat.map_and_flatten",
+          "command": "mentat.flatten_and_map",
           "group": "mentat@1"
         }
       ],
