@@ -4,12 +4,8 @@ import * as vscode from 'vscode';
 import MentatViewProvider from './mentat-view-provider';
 const workspace = require("solidity-workspace");
 import { Mentat } from './mentat';
-import { NodeDependenciesProvider } from './tree-view-provider';
-
-process.env["LANGCHAIN_TRACING_V2"] = "true";
-process.env["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com";
-process.env["LANGCHAIN_API_KEY"] = "ls__2435653e5df148fbbbe4266969dc6a7b"; // IDK why cwd is being set to /, dotenv is not working
-process.env["LANGCHAIN_PROJECT"] = "mentat";
+import { ExplanationNodeProvider } from './tree-view-provider';
+import { ExplanationWebview } from './explanation-view-provider';
 
 type ExtendedDocumentSymbol = vscode.DocumentSymbol & {
 	explained: boolean;
@@ -121,18 +117,24 @@ export function activate(context: vscode.ExtensionContext) {
   		vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0
 		? vscode.workspace.workspaceFolders[0].uri.fsPath
 		: undefined;
-	let treeDataProvider = new NodeDependenciesProvider(rootPath);
+	let treeDataProvider = new ExplanationNodeProvider(rootPath);
 	vscode.window.createTreeView('mentat.treeview', {treeDataProvider: treeDataProvider});
 
 	const chatViewProvider = new MentatViewProvider(context, treeDataProvider, new Mentat(context));
+	const explanationViewProvider = new ExplanationWebview(context);
+
+	vscode.window.registerWebviewViewProvider('mentat.explanation', explanationViewProvider);
 
 	context.subscriptions.push(
 		vscode.commands.registerCommand("mentat.analyze", query_), // remove
 		vscode.commands.registerCommand("mentat.parse_file", parse_file),
 		vscode.commands.registerCommand("mentat.flatten_contract", explain_),
+		vscode.commands.registerCommand('node.select', (node) => {
+			explanationViewProvider.updateContent(node.explanation || "No explanation available.");
+		}),
 		vscode.window.registerWebviewViewProvider("mentat.view", chatViewProvider, {
 			webviewOptions: { retainContextWhenHidden: true }
-		})
+		}),
 	);
 
 	async function explain_() {
