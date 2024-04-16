@@ -18,6 +18,10 @@
         "title": "mentat:analyze"
       },
       {
+        "command": "mentat.explain",
+        "title": "mentat:explain"
+      },
+      {
         "command": "mentat.list_symbols",
         "title": "mentat:list_symbols"
       },
@@ -26,8 +30,8 @@
         "title": "mentat:parse_file"
       },
       {
-        "command": "mentat.flatten_contract",
-        "title": "mentat:flatten_contract"
+        "command": "mentat.map_and_flatten",
+        "title": "mentat:map_and_flatten"
       }
     ],
     "menus": {
@@ -45,9 +49,15 @@
           "group": "mentat@1"
         },
         {
-          "command": "mentat.flatten_contract",
+          "command": "mentat.map_and_flatten",
           "group": "mentat@1"
         }
+      ],
+      "view/item/context": [
+      {
+        "command": "mentat.explain",
+        "when": "view == mentat.treeview && viewItem == explanationNode"
+      }
       ]
     },
     "viewsContainers": {

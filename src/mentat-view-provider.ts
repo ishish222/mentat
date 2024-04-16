@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { Mentat } from './mentat';
 import { ExplanationNodeProvider } from './tree-view-provider';
-import { ExplanationWebview } from './explanation-view-provider';
+import { ExplanationNode } from './tree-view-provider';
 
 export default class MentatViewProvider implements vscode.WebviewViewProvider {
     private webView?: vscode.WebviewView;
@@ -67,6 +67,46 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
             type: 'assistant', 
             value: text_output
         });
+    }
+
+    public async explainNode(node: ExplanationNode) {
+        // check if all children are explained
+        let all_explained = true;
+        node.children.forEach((child) => {
+            if (!child.explained) {
+                all_explained = false;
+            }
+        });
+
+        if(!all_explained) {
+            vscode.window.showErrorMessage('Please explain all dependencies first.');
+            return;
+        }
+
+        this.sendMessageToWebView({ 
+            type: 'operator', 
+            value: `Requesting explanation for ${node.label}`
+        });
+
+        let explanations = [];
+        node.children.forEach((child) => {
+            if (child.explained) {
+                explanations.push(JSON.stringify(child.explanation, null, 2));
+            }
+        });
+
+        let output = await this.mentat.explainNode(node.label, explanations);
+        let text_output = JSON.stringify(output, null, 2);
+        node.explanation = text_output;
+        node.explained = true;
+        this.treeDataProvider.refresh();
+
+        this.sendMessageToWebView({ 
+            type: 'assistant', 
+            value: 'Explanation retrieved'
+        });
+
+        return output;
     }
 
     public sendMessageToWebView(message: any) {
