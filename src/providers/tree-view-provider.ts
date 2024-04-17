@@ -52,6 +52,8 @@ export class ExplanationNodeProvider implements vscode.TreeDataProvider<Explanat
     } else {
       return Promise.resolve(this.tree);
     }
+
+    return Promise.resolve([]);
   }
 
   clearExplanationNodes() {
