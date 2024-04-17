@@ -1,11 +1,11 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import MentatViewProvider from './mentat-view-provider';
+import MentatViewProvider from './providers/mentat-view-provider';
 const workspace = require("solidity-workspace");
 import { Mentat } from './mentat';
-import { ExplanationNodeProvider, ExplanationNode } from './tree-view-provider';
-import { ExplanationWebview } from './explanation-view-provider';
+import { ExplanationNodeProvider, ExplanationNode } from './providers/tree-view-provider';
+import { ExplanationWebview } from './providers/explanation-view-provider';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
@@ -84,6 +84,12 @@ export function activate(context: vscode.ExtensionContext) {
   		vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0
 		? vscode.workspace.workspaceFolders[0].uri.fsPath
 		: undefined;
+
+	if(!rootPath) {
+		vscode.window.showErrorMessage('No workspace found.');
+		return;
+	}
+
 	let treeDataProvider = new ExplanationNodeProvider(context, rootPath);
 	vscode.window.createTreeView('mentat.treeview', {treeDataProvider: treeDataProvider});
 

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { Mentat } from './mentat';
+import { Mentat } from '../mentat';
 import { ExplanationNodeProvider } from './tree-view-provider';
 import { ExplanationNode } from './tree-view-provider';
 
@@ -88,7 +88,7 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
             value: `Requesting explanation for ${node.label}`
         });
 
-        let explanations = [];
+        let explanations: string[] = [];
         node.children.forEach((child) => {
             if (child.explained) {
                 explanations.push(JSON.stringify(child.explanation, null, 2));
