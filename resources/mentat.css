@@ -95,9 +95,10 @@ textarea::placeholder {
     border: var(--border-width) solid var(--border-color);
 }
 
-.loader {
-    width: 70px;
-    height: 35px;
+.loader-svg {
+    animation: blink 1s linear infinite;
+    width: 140px;
+    height: 70px;
     overflow: hidden;
     position: absolute;
     margin: auto;
@@ -106,41 +107,11 @@ textarea::placeholder {
     left: 0;
     right: 0;
 }
-
-.loader:before {
-    content: "";
-    width: 70px;
-    height: 70px;
-    position: absolute;
-    left: 0;
-    top: 0;
-    border: 5px solid #0000;
-    border-color: #fff #fff #0000 #0000;
-    border-radius: 50%;
-    box-sizing: border-box;
-    animation: rotate 3s ease-in-out infinite;
-    transform: rotate(-200deg);
-}
-
-@keyframes rotate {
-    0% {
-        border-width: 10px;
+@keyframes blink {
+    0%, 100% {
+        opacity: 1;
     }
-
-    25% {
-        border-width: 3px;
-    }
-
     50% {
-        transform: rotate(115deg);
-        border-width: 10px;
-    }
-
-    75% {
-        border-width: 3px;
-    }
-
-    100% {
-        border-width: 10px;
+        opacity: 0;
     }
 }

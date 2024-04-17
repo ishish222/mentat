@@ -14,17 +14,30 @@
   "contributes": {
     "commands": [
       {
-        "command": "mentat.analyze",
-        "title": "mentat:analyze"
+        "command": "mentat.explain",
+        "title": "mentat:explain"
+      },
+      {
+        "command": "mentat.flatten_and_map",
+        "title": "mentat:flatten_and_map"
+      },
+      {
+        "command": "mentat.change_model",
+        "title": "mentat:change_model"
       }
     ],
     "menus": {
       "editor/context": [
         {
-          "when": "editorHasSelection",
-          "command": "mentat.analyze",
+          "command": "mentat.flatten_and_map",
           "group": "mentat@1"
         }
+      ],
+      "view/item/context": [
+      {
+        "command": "mentat.explain",
+        "when": "view == mentat.treeview && viewItem == explanationNode"
+      }
       ]
     },
     "viewsContainers": {
@@ -41,7 +54,16 @@
         {
           "type": "webview",
           "id": "mentat.view",
-          "name": "Mentat"
+          "name": "Chat"
+        },
+        {
+          "id": "mentat.treeview",
+          "name": "Tree View"
+        },
+        {
+          "type": "webview",
+          "id": "mentat.explanation",
+          "name": "Explanation View"
         }
       ]
     }
@@ -66,6 +88,12 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
-    "openai": "^4.28.4"
+    "@langchain/community": "^0.0.40",
+    "@langchain/core": "^0.1.48",
+    "@solidity-parser/parser": "^0.18.0",
+    "dotenv": "^16.4.5",
+    "langsmith": "^0.1.14",
+    "openai": "^4.28.4",
+    "solidity-workspace": "^0.2.1"
   }
 }

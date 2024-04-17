@@ -21,31 +21,15 @@ function insert_assistant(list, html) {
     window.addEventListener("message", (event) => {
         const message = event.data;
         
-        let html_strings = [];
+
         switch (message.type) {
-            
             case "operator":
-                if(message.hasOwnProperty("symbol")) {
-                    html_strings.push(`Symbol:</br>`);
-                    html_strings.push(marked.parseInline(`<pre class='overflow-auto'><code>${message.symbol}</code></pre></br>`));
-                }
-                if(message.hasOwnProperty("definition")) {
-                    html_strings.push(`Definition:</br>`);
-                    html_strings.push(marked.parseInline(`<pre class='overflow-auto'><code>${message.definition}</code></pre></br>`));
-                }
-                if(message.hasOwnProperty("usage_1")) {
-                    html_strings.push(`Usage 1:</br><pre class='overflow-auto'><code>${message.usage_1}</code></pre></br>`);
-                }
-                if(message.hasOwnProperty("usage_2")) {
-                    html_strings.push(`Usage 2:</br><pre class='overflow-auto'><code>${message.usage_2}</code></pre></br>`);
-                }
-                if(message.hasOwnProperty("usage_3")) {
-                    html_strings.push(`Usage 3:</br><pre class='overflow-auto'><code>${message.usage_3}</code></pre></br>`);
+                if(message.code != null) {
+                    html = marked.parseInline(message.value + "<br /> <br /><pre class='overflow-auto'><code>```" + message.code + "```</code></pre>");
                 }
                 else {
-                    html_strings.push(message.value);
+                    html = message.value;
                 }
-                html = html_strings.join("\n");
                 insert_operator(list, html);
                 document.getElementById("in-progress")?.classList?.remove("hidden");
                 break;
