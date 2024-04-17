@@ -10,6 +10,7 @@ import { JsonOutputParser } from "@langchain/core/output_parsers";
 export class Mentat {
     private openAiApi?: OpenAI;
     private apiKey?: string;
+    private apiModel?: string;
     private llm?: ChatOpenRouter;
     private chain?: any;
     private currentContract?: string;
@@ -30,11 +31,24 @@ export class Mentat {
         }
     }
 
+    public async ensureApiModel() {
+        this.apiModel = await this.context.globalState.get('openrouter-api-model') as string;
+
+        if (!this.apiModel) {
+            const apiModelInput = await vscode.window.showInputBox({
+                prompt: "Please enter your OpenRouter API Model string",
+                ignoreFocusOut: true,
+            });
+            this.apiModel = apiModelInput!;
+            this.context.globalState.update('openrouter-api-model', this.apiModel);
+        }
+    }
+
     private async ensureLLM() {
         if(!this.llm) {
             await this.ensureApiKey();
-            //this.llm = new ChatOpenRouter('gpt-3.5-turbo-16k', this.apiKey);
-            this.llm = new ChatOpenRouter('gpt-4-turbo', this.apiKey);
+            await this.ensureApiModel();
+            this.llm = new ChatOpenRouter(this.apiModel!, this.apiKey!);
         }
     }
 

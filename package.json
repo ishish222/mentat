@@ -20,6 +20,10 @@
       {
         "command": "mentat.flatten_and_map",
         "title": "mentat:flatten_and_map"
+      },
+      {
+        "command": "mentat.change_model",
+        "title": "mentat:change_model"
       }
     ],
     "menus": {

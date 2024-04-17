@@ -136,3 +136,16 @@ export const parse_flattened_prompt = ChatPromptTemplate.fromMessages([
     ["system", parse_flattened_system_str],
     ["human", parse_flattened_human_str],
 ]);
+
+let parse_flattened_human_xml_str = `
+Please break down the following flattened contract into its components:
+<flattened_contract_source>
+{flattened_contract}
+</flattened_contract_source>
+Please return the component map in the requested format.
+`;
+/*
+export const parse_flattened_prompt_xml = ChatPromptTemplate.fromMessages([
+    ["system", parse_flattened_system_xml_str],
+    ["human", parse_flattened_human_xml_str],
+]);*/

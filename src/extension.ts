@@ -104,6 +104,7 @@ export function activate(context: vscode.ExtensionContext) {
 			explanationViewProvider.updateContent(node.explanation || "No explanation available.");
 		}),
 		vscode.commands.registerCommand("mentat.explain", (node) => explain__(node)),
+		vscode.commands.registerCommand("mentat.change_model", changeModel_),
 		vscode.window.registerWebviewViewProvider("mentat.view", chatViewProvider, {
 			webviewOptions: { retainContextWhenHidden: true }
 		}),
@@ -121,6 +122,15 @@ export function activate(context: vscode.ExtensionContext) {
 	async function query_() { 
 		await query(chatViewProvider); 
 	}
+
+	async function changeModel_() {
+		const apiModelString = await vscode.window.showInputBox({
+			prompt: "Please enter your OpenRouter model string",
+			ignoreFocusOut: true,
+		});
+		context.globalState.update('openrouter-api-model', apiModelString);
+		vscode.window.showInformationMessage(`Model string updated to: ${apiModelString}`);
+	}		
 
 }
 
