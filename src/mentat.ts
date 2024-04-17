@@ -2,10 +2,10 @@ import * as vscode from 'vscode';
 import { OpenAI } from 'openai';
 import { ChatOpenAI } from "@langchain/openai";
 import { ChatOpenRouter } from "./openrouter";
-import { parse_flattened_prompt } from './prompts/flattening_prompt';
-import { explain_single_prompt } from './prompts/explain-single-node';
+import { parse_flattened_prompt, parse_flattened_prompt_xml } from './prompts/flattening_prompt';
+import { explain_single_prompt, explain_single_prompt_xml } from './prompts/explain-single-node';
 import { StringOutputParser } from "@langchain/core/output_parsers";
-import { JsonOutputParser } from "@langchain/core/output_parsers";
+import { JsonOutputParser, XMLOutputParser } from "@langchain/core/output_parsers";
 
 export class Mentat {
     private openAiApi?: OpenAI;
@@ -69,10 +69,12 @@ export class Mentat {
         if(this.llm) {
             // select the proper prompt
             // combine into a chain with output parser
-            let prompt = parse_flattened_prompt;
+            //let prompt = parse_flattened_prompt;
+            let prompt = parse_flattened_prompt_xml;
             let llm = this.llm;
             //let output_parser = new StringOutputParser();
-            let output_parser = new JsonOutputParser();
+            //let output_parser = new JsonOutputParser();
+            let output_parser = new XMLOutputParser();
             let chain = prompt.pipe(llm).pipe(output_parser);
 
             // invoke the chain
@@ -91,10 +93,12 @@ export class Mentat {
         if(this.llm) {
             // select the proper prompt
             // combine into a chain with output parser
-            let prompt = explain_single_prompt;
+            //let prompt = explain_single_prompt;
+            let prompt = explain_single_prompt_xml;
             let llm = this.llm;
             //let output_parser = new StringOutputParser();
-            let output_parser = new JsonOutputParser();
+            //let output_parser = new JsonOutputParser();
+            let output_parser = new XMLOutputParser();
             let chain = prompt.pipe(llm).pipe(output_parser);
 
             //console.log('explanations:', explanations.join('\n--\n'));
@@ -102,7 +106,7 @@ export class Mentat {
             let response = await chain.invoke({
                 "flattened_contract": this.currentContract,
                 "component_name": node_label,
-                "component_explanations": explanations.join('\n--\n')
+                "component_explanations": explanations
             });
             
             // return the response

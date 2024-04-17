@@ -47,7 +47,6 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
             this.webView?.show?.(true);
         }
 
-        //let message = `Requesting explanation for flattened contract:\n\n${flattened_contract}`;
         let message = `Requesting mapping of the flattened contract.`;
         
         this.sendMessageToWebView({ 
@@ -57,10 +56,9 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
 
         console.log('parsing flattened contract')
         let output = await this.mentat.parseFlattenedContract(flattened_contract);
-        let text_output = JSON.stringify(output, null, 2);
-        //console.log('output:', text_output);
+
         this.treeDataProvider.clearExplanationNodes();
-        this.treeDataProvider.loadExplanationNodes(output);
+        this.treeDataProvider.loadExplanationNodes_xml(output);
         this.treeDataProvider.refresh();
 
         this.sendMessageToWebView({ 
@@ -91,13 +89,14 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
         let explanations: string[] = [];
         node.children.forEach((child) => {
             if (child.explained) {
-                explanations.push(JSON.stringify(child.explanation, null, 2));
+                
+                explanations.push(`<explanation>${child.explanation}</explanation>`);
             }
         });
 
         let output = await this.mentat.explainNode(node.label, explanations);
-        let text_output = JSON.stringify(output, null, 2);
-        node.explanation = text_output;
+        
+        node.explanation = output.explanation[1].explanation;
         node.explained = true;
         this.treeDataProvider.refresh();
 
