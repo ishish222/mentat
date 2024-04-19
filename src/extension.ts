@@ -45,6 +45,7 @@ async function flatten(
 
 async function flatten_and_map(
 	chatViewProvider: MentatViewProvider,
+	use_cache: boolean = true,
 ): Promise<void> {
 	const current_document = vscode.window.activeTextEditor?.document;
 	if(!current_document) {
@@ -64,7 +65,7 @@ async function flatten_and_map(
 		return;
 	}
 
-	chatViewProvider.explainFlattenedContract(flatten_and_map_result);
+	chatViewProvider.explainFlattenedContract(flatten_and_map_result, use_cache);
 }
 
 async function query(
@@ -97,26 +98,24 @@ export function activate(context: vscode.ExtensionContext) {
 	const explanationViewProvider = new ExplanationWebview(context);
 
 	vscode.window.registerWebviewViewProvider('mentat.explanation', explanationViewProvider);
+	vscode.window.registerWebviewViewProvider("mentat.view", chatViewProvider, {
+		webviewOptions: { retainContextWhenHidden: true }
+	})
 
-	context.subscriptions.push(
-		vscode.commands.registerCommand("mentat.flatten_and_map", flatten_and_map_),
-		vscode.commands.registerCommand("node.select", (node) => {
-			explanationViewProvider.updateContent(node.explanation || "No explanation available.");
-		}),
-		vscode.commands.registerCommand("mentat.explain", (node) => explain__(node)),
-		vscode.commands.registerCommand("mentat.change_model", changeModel_),
-		vscode.window.registerWebviewViewProvider("mentat.view", chatViewProvider, {
-			webviewOptions: { retainContextWhenHidden: true }
-		}),
-	);
-
-		
 	async function explain__(node: ExplanationNode) {
-		await chatViewProvider.explainNode(node);
+		await chatViewProvider.explainNode(node, true);
+	}
+
+	async function explain_wo_cache_(node: ExplanationNode) {
+		await chatViewProvider.explainNode(node, false);
 	}
 
 	async function flatten_and_map_() {
-		await flatten_and_map(chatViewProvider);
+		await flatten_and_map(chatViewProvider, true);
+	}
+
+	async function flatten_and_map_wo_cache_() {
+		await flatten_and_map(chatViewProvider, false);
 	}
 
 	async function query_() { 
@@ -131,6 +130,18 @@ export function activate(context: vscode.ExtensionContext) {
 		context.globalState.update('openrouter-api-model', apiModelString);
 		vscode.window.showInformationMessage(`Model string updated to: ${apiModelString}`);
 	}		
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand("mentat.change_model", changeModel_),
+		vscode.commands.registerCommand("mentat.flatten_and_map_wo_cache", flatten_and_map_wo_cache_),
+		vscode.commands.registerCommand("mentat.flatten_and_map", flatten_and_map_),
+		vscode.commands.registerCommand("node.select", (node) => {
+			explanationViewProvider.updateContent(node.explanation || "No explanation available.");
+		}),
+		vscode.commands.registerCommand("mentat.explain", (node) => explain__(node)),
+		vscode.commands.registerCommand("mentat.explain_wo_cache", (node) => explain_wo_cache_(node)),
+	);
+
 
 }
 
