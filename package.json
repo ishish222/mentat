@@ -4,7 +4,7 @@
   "description": "VSCode extension for analysing code from ITSec viewpoint",
   "version": "0.0.1",
   "engines": {
-    "vscode": "^1.86.2"
+    "vscode": "^1.88.0"
   },
   "categories": [
     "Other"
@@ -95,7 +95,7 @@
   "devDependencies": {
     "@types/mocha": "^10.0.6",
     "@types/node": "18.x",
-    "@types/vscode": "^1.86.2",
+    "@types/vscode": "^1.88.0",
     "@typescript-eslint/eslint-plugin": "^7.0.2",
     "@typescript-eslint/parser": "^7.0.2",
     "@vscode/test-cli": "^0.0.6",
@@ -109,7 +109,7 @@
     "@solidity-parser/parser": "^0.18.0",
     "aws-sdk": "^2.1602.0",
     "dotenv": "^16.4.5",
-    "langsmith": "^0.1.14",
+    "langsmith": "^0.1.18",
     "openai": "^4.28.4",
     "solidity-workspace": "^0.2.1",
     "sqlite3": "^5.1.7"
