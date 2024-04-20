@@ -74,10 +74,6 @@ async function query(
 }
 
 export function activate(context: vscode.ExtensionContext) {
-	// Load environment variables (for Langsmith API key, etc.)
-	console.log('Loading .env');
-	dotenv.config({ path: path.resolve(context.extensionPath, '.env') });
-
 	console.log('Activating Mentat extension');
 
 	/*** Tree view tests */
@@ -94,7 +90,8 @@ export function activate(context: vscode.ExtensionContext) {
 	let treeDataProvider = new ExplanationNodeProvider(context, rootPath);
 	vscode.window.createTreeView('mentat.treeview', {treeDataProvider: treeDataProvider});
 
-	const chatViewProvider = new MentatViewProvider(context, treeDataProvider, new Mentat(context));
+	const mentat = new Mentat(context);
+	const chatViewProvider = new MentatViewProvider(context, treeDataProvider, mentat);
 	const explanationViewProvider = new ExplanationWebview(context);
 
 	vscode.window.registerWebviewViewProvider('mentat.explanation', explanationViewProvider);
@@ -111,7 +108,8 @@ export function activate(context: vscode.ExtensionContext) {
 	}
 
 	async function flatten_and_map_() {
-		if(process.env.AWS_CACHE_USE === 'true') {
+		let use_cache = vscode.workspace.getConfiguration('mentat').get('cache.S3CacheEnable');
+		if(use_cache) {
 			await flatten_and_map(chatViewProvider, true);
 		}
 		else {

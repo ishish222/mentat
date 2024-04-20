@@ -82,6 +82,83 @@
           "name": "Explanation View"
         }
       ]
+    },
+    "configuration": {
+      "title": "Mentat",
+      "properties": {
+        "mentat.cache.S3CacheEnable": {
+          "type": "boolean",
+          "order": 1,
+          "default": false,
+          "description": "Enable S3 cache'ing of responses."
+        },
+        "mentat.cache.S3CacheAWSRoleKeyId": {
+          "type": "string",
+          "order": 2,
+          "default": null,
+          "description": "Key ID of AWS role that has access to the cache bucket."
+        },
+        "mentat.cache.S3CacheAWSRoleSecretKey": {
+          "type": "string",
+          "order": 3,
+          "default": null,
+          "description": "Secret key of AWS role that has access to the cache bucket."
+        },
+        "mentat.cache.S3CacheAWSRegion": {
+          "type": "string",
+          "order": 4,
+          "default": null,
+          "description": "Region of the location of the cache bucket."
+        },
+        "mentat.cache.S3CacheBucket": {
+          "type": "string",
+          "order": 5,
+          "default": null,
+          "description": "Name of the cache bucket."
+        },
+        "mentat.cache.S3CachePrefix": {
+          "type": "string",
+          "order": 6,
+          "default": null,
+          "description": "Prefix for the cache bucket."
+        },
+        "mentat.openrouter.openrouterApiKey": {
+          "type": "string",
+          "order": 7,
+          "default": null,
+          "description": "Specifies the Openrouter API key to use."
+        },
+        "mentat.openrouter.openrouterModelName": {
+          "type": "string",
+          "order": 8,
+          "default": null,
+          "description": "Specified the OpenRouter model to use."
+        },
+        "mentat.traceLangsmith.LangsmithEnable": {
+          "type": "boolean",
+          "order": 9,
+          "default": false,
+          "description": "Enable tracing with Langsmith."
+        },
+        "mentat.traceLangsmith.LangsmithURL": {
+          "type": "string",
+          "order": 10,
+          "default": "https://api.smith.langchain.com",
+          "description": "Langsmith URL for tracing."
+        },
+        "mentat.traceLangsmith.LangsmithAPIKey": {
+          "type": "string",
+          "order": 11,
+          "default": "",
+          "description": "Langsmith API key."
+        },
+        "mentat.traceLangsmith.LangstmithProjectName": {
+          "type": "string",
+          "order": 12,
+          "default": null,
+          "description": "Langsmith project name."
+        }
+      }
     }
   },
   "scripts": {
