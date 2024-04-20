@@ -1,71 +1,40 @@
-# mentat README
+# Mentat
 
-This is the README for your extension "mentat". After writing up a brief description, we recommend including the following sections.
+Mentat plugin has been created to facilitate code explanation with assistance of LLMs.
 
-## Features
+For more information please refer to: https://medium.com/@ishish222/code-mentat-code-analysis-w-claude-3-4343b5c637dc
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+## Installation and debugging
 
-For example if there is an image subfolder under your extension project workspace:
+Clone the repo:
 
-\!\[feature X\]\(images/feature-x.png\)
+```bash
+$ git clone https://github.com/ishish222/mentat
+$ cd mentat
+```
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+Install the dependencies and compile
+```bash
+$ npm install
+$ npm run compile
+```
+
+Run within the VSCode's Extension Host by selecting "Run" -> "Start debugging"  
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+Runtime dependencies:
+- [Lanchain](https://js.langchain.com/)
+- [Langsmith](https://www.langchain.com/langsmith)
+- [solidity-workspace](https://github.com/tintinweb/solidity-workspace)
+- [aws-sdk](https://github.com/aws/aws-sdk-js) (optional, highly recommended for cacheing)
 
-## Extension Settings
+Before you'll be able to use functions you need to configure Openrouter API key and model string in the extension settings (Settings -> Settings -> Extensions -> Mentat -> Openrouter). You can obtain your key in the service portal [Openrouter](https://openrouter.ai/).
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+If you want to use S3 cache (which is highly recommended considering the current token burning rate), you need to setup appropriate S3 bucket and user/role and setup credentials in the extension settings (Settings -> Settings -> Extensions -> Mentat -> S3 Cache).
 
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+If you want Langsmith tracing, obtain the API key and setup in settings (Settings -> Settings -> Extensions -> Mentat -> Langsmith).
 
 ## Known Issues
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
-
-## Release Notes
-
-Users appreciate release notes as you update your extension.
-
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
----
-
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+Currently Mentat plugin has been tested only with Solidity code. Large contracts can fail, even with newest models. Further task decomposition should fix that.
