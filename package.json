@@ -4,7 +4,7 @@
   "description": "VSCode extension for analysing code from ITSec viewpoint",
   "version": "0.0.1",
   "engines": {
-    "vscode": "^1.86.2"
+    "vscode": "^1.88.0"
   },
   "categories": [
     "Other"
@@ -18,8 +18,16 @@
         "title": "mentat:explain"
       },
       {
+        "command": "mentat.explain_wo_cache",
+        "title": "mentat:explain (no cache)"
+      },
+      {
         "command": "mentat.flatten_and_map",
         "title": "mentat:flatten_and_map"
+      },
+      {
+        "command": "mentat.flatten_and_map_wo_cache",
+        "title": "mentat:flatten_and_map (no cache)"
       },
       {
         "command": "mentat.change_model",
@@ -31,13 +39,21 @@
         {
           "command": "mentat.flatten_and_map",
           "group": "mentat@1"
+        },
+        {
+          "command": "mentat.flatten_and_map_wo_cache",
+          "group": "mentat@2"
         }
       ],
       "view/item/context": [
-      {
-        "command": "mentat.explain",
-        "when": "view == mentat.treeview && viewItem == explanationNode"
-      }
+        {
+          "command": "mentat.explain",
+          "when": "view == mentat.treeview && viewItem == explanationNode"
+        },
+        {
+          "command": "mentat.explain_wo_cache",
+          "when": "view == mentat.treeview && viewItem == explanationNode"
+        }
       ]
     },
     "viewsContainers": {
@@ -79,7 +95,7 @@
   "devDependencies": {
     "@types/mocha": "^10.0.6",
     "@types/node": "18.x",
-    "@types/vscode": "^1.86.2",
+    "@types/vscode": "^1.88.0",
     "@typescript-eslint/eslint-plugin": "^7.0.2",
     "@typescript-eslint/parser": "^7.0.2",
     "@vscode/test-cli": "^0.0.6",
@@ -91,9 +107,11 @@
     "@langchain/community": "^0.0.40",
     "@langchain/core": "^0.1.48",
     "@solidity-parser/parser": "^0.18.0",
+    "aws-sdk": "^2.1602.0",
     "dotenv": "^16.4.5",
-    "langsmith": "^0.1.14",
+    "langsmith": "^0.1.18",
     "openai": "^4.28.4",
-    "solidity-workspace": "^0.2.1"
+    "solidity-workspace": "^0.2.1",
+    "sqlite3": "^5.1.7"
   }
 }

@@ -39,7 +39,10 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
         }
     }
 
-    public async explainFlattenedContract(flattened_contract: string) {
+    public async explainFlattenedContract(
+        flattened_contract: string,
+        use_cache: boolean = true
+    ) {
         // focus on mentat view
         if (!this.webView) {
             await vscode.commands.executeCommand('mentat.view.focus');
@@ -55,7 +58,7 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
         });
 
         console.log('parsing flattened contract')
-        let output = await this.mentat.parseFlattenedContract(flattened_contract);
+        let output = await this.mentat.parseFlattenedContract(flattened_contract, use_cache);
 
         this.treeDataProvider.clearExplanationNodes();
         this.treeDataProvider.loadExplanationNodes_xml(output);
@@ -67,7 +70,10 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
         });
     }
 
-    public async explainNode(node: ExplanationNode) {
+    public async explainNode(
+        node: ExplanationNode,
+        use_cache: boolean = true
+    ) {
         // check if all children are explained
         let all_explained = true;
         node.children.forEach((child) => {
@@ -94,7 +100,7 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
             }
         });
 
-        let output = await this.mentat.explainNode(node.label, explanations);
+        let output = await this.mentat.explainNode(node.label, explanations, use_cache);
         
         node.explanation = output.explanation[1].explanation;
         node.explained = true;

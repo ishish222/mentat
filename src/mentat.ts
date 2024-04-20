@@ -1,16 +1,19 @@
 import * as vscode from 'vscode';
 import { OpenAI } from 'openai';
 import { ChatOpenAI } from "@langchain/openai";
-import { ChatOpenRouter } from "./openrouter";
+import { ChatOpenRouter, ChatOpenRouterCached } from "./openrouter";
 import { parse_flattened_prompt, parse_flattened_prompt_xml } from './prompts/flattening_prompt';
 import { explain_single_prompt, explain_single_prompt_xml } from './prompts/explain-single-node';
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { JsonOutputParser, XMLOutputParser } from "@langchain/core/output_parsers";
+import { S3Cache } from "./s3-cache";
+import { bool } from 'aws-sdk/clients/signer';
 
 export class Mentat {
     private openAiApi?: OpenAI;
     private apiKey?: string;
     private apiModel?: string;
+    private llm_cached?: ChatOpenRouterCached;
     private llm?: ChatOpenRouter;
     private chain?: any;
     private currentContract?: string;
@@ -44,6 +47,22 @@ export class Mentat {
         }
     }
 
+    private async ensureLLMCached() {
+        if(!this.llm_cached) {
+            await this.ensureApiKey();
+            await this.ensureApiModel();
+            let cache = new S3Cache({
+                accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+                secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+                region: process.env.AWS_REGION!,
+            }, 
+            process.env.AWS_CACHE_BUCKET!,
+            process.env.AWS_CACHE_PREFIX!
+            );
+            this.llm_cached = new ChatOpenRouterCached(this.apiModel!, this.apiKey!, cache);
+        }
+    }
+
     private async ensureLLM() {
         if(!this.llm) {
             await this.ensureApiKey();
@@ -63,54 +82,112 @@ export class Mentat {
         return 'test';    
     }
 
-    public async parseFlattenedContract(flattened_contract: string): Promise<Object> {
-        await this.ensureLLM();
-        this.currentContract = flattened_contract;
-        if(this.llm) {
-            // select the proper prompt
-            // combine into a chain with output parser
-            //let prompt = parse_flattened_prompt;
-            let prompt = parse_flattened_prompt_xml;
-            let llm = this.llm;
-            //let output_parser = new StringOutputParser();
-            //let output_parser = new JsonOutputParser();
-            let output_parser = new XMLOutputParser();
-            let chain = prompt.pipe(llm).pipe(output_parser);
+    public async parseFlattenedContract(
+        flattened_contract: string, 
+        use_cache: bool = true
+    ): Promise<Object> {
+        if(use_cache) {
+            await this.ensureLLMCached();
+            this.currentContract = flattened_contract;
+            if(this.llm_cached) {
+                // select the proper prompt
+                // combine into a chain with output parser
+                //let prompt = parse_flattened_prompt;
+                let prompt = parse_flattened_prompt_xml;
+                let llm = this.llm_cached;
+                //let output_parser = new StringOutputParser();
+                //let output_parser = new JsonOutputParser();
+                let output_parser = new XMLOutputParser();
+                let chain = prompt.pipe(llm).pipe(output_parser);
 
-            // invoke the chain
-            let response = await chain.invoke({
-                "flattened_contract": flattened_contract,
-            });
-            
-            // return the response
-            return response;
+                // invoke the chain
+                let response = await chain.invoke({
+                    "flattened_contract": flattened_contract,
+                });
+                
+                // return the response
+                return response;
+            }
+        }
+        else {
+            await this.ensureLLM();
+            this.currentContract = flattened_contract;
+            if(this.llm) {
+                // select the proper prompt
+                // combine into a chain with output parser
+                //let prompt = parse_flattened_prompt;
+                let prompt = parse_flattened_prompt_xml;
+                let llm = this.llm;
+                //let output_parser = new StringOutputParser();
+                //let output_parser = new JsonOutputParser();
+                let output_parser = new XMLOutputParser();
+                let chain = prompt.pipe(llm).pipe(output_parser);
+
+                // invoke the chain
+                let response = await chain.invoke({
+                    "flattened_contract": flattened_contract,
+                });
+                
+                // return the response
+                return response;
+            }
         }
         return 'LLM error';    
     }
 
-    public async explainNode(node_label: string, explanations: string[]): Promise<Object> {
-        await this.ensureLLM();
-        if(this.llm) {
-            // select the proper prompt
-            // combine into a chain with output parser
-            //let prompt = explain_single_prompt;
-            let prompt = explain_single_prompt_xml;
-            let llm = this.llm;
-            //let output_parser = new StringOutputParser();
-            //let output_parser = new JsonOutputParser();
-            let output_parser = new XMLOutputParser();
-            let chain = prompt.pipe(llm).pipe(output_parser);
+    public async explainNode(
+        node_label: string, 
+        explanations: string[],
+        use_cache: bool = true
+    ): Promise<Object> {
+        if(use_cache) {
+            await this.ensureLLMCached();
+            if(this.llm_cached) {
+                // select the proper prompt
+                // combine into a chain with output parser
+                //let prompt = explain_single_prompt;
+                let prompt = explain_single_prompt_xml;
+                let llm = this.llm_cached;
+                //let output_parser = new StringOutputParser();
+                //let output_parser = new JsonOutputParser();
+                let output_parser = new XMLOutputParser();
+                let chain = prompt.pipe(llm).pipe(output_parser);
 
-            //console.log('explanations:', explanations.join('\n--\n'));
-            // invoke the chain
-            let response = await chain.invoke({
-                "flattened_contract": this.currentContract,
-                "component_name": node_label,
-                "component_explanations": explanations
-            });
-            
-            // return the response
-            return response;
+                // invoke the chain
+                let response = await chain.invoke({
+                    "flattened_contract": this.currentContract,
+                    "component_name": node_label,
+                    "component_explanations": explanations
+                });
+                
+                // return the response
+                return response;
+            }
+        }
+        else {
+            await this.ensureLLM();
+            if(this.llm) {
+                // select the proper prompt
+                // combine into a chain with output parser
+                //let prompt = explain_single_prompt;
+                let prompt = explain_single_prompt_xml;
+                let llm = this.llm;
+                //let output_parser = new StringOutputParser();
+                //let output_parser = new JsonOutputParser();
+                let output_parser = new XMLOutputParser();
+                let chain = prompt.pipe(llm).pipe(output_parser);
+
+                //console.log('explanations:', explanations.join('\n--\n'));
+                // invoke the chain
+                let response = await chain.invoke({
+                    "flattened_contract": this.currentContract,
+                    "component_name": node_label,
+                    "component_explanations": explanations
+                });
+                
+                // return the response
+                return response;
+            }
         }
         return 'LLM error';    
     }
