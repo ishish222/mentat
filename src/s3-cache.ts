@@ -58,6 +58,10 @@ export class S3Cache extends BaseCache<Generation[]> {
      * @param value The data to be stored.
      */
     async update(prompt: string, llmKey: string, value: Generation[]): Promise<void> {
+        if(value.length === 0) {
+            console.error('Empty value in cache update, ignoring');
+            return;
+        }
         const key = this.getCacheKey(prompt, llmKey);
         try {
             await this.s3.putObject({

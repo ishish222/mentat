@@ -76,7 +76,11 @@ contract EtherWallet {{
 
 </flattened_contract_source>
 
-And explain the role of the component
+You can use the following explanations of components to help you:
+<component_explanations>
+</component_explanations>
+
+Please explain the role of the component
 
 <component_name>EtherWallet:receive</component_name>
 
@@ -104,6 +108,8 @@ an explanation of a specific component of the contract.
 You are given a code containing a flattened contract and you are expected to analyze the meaning of the component in context
 of the flattened contract and provide a detailed explanation of the role of the component in the contract.
 
+Please make sure that you avoid characters '<', '>', and '&' in between xml tags.
+
 Examples:
 
 <examples>
@@ -129,14 +135,14 @@ Please read the following contract:
 {flattened_contract}
 </flattened_contract_source>
 
-And explain the role of the component
-
-<component_name>{component_name}</component_name>
-
 You can use the following explanations of components to help you:
 <component_explanations>
 {component_explanations}
 </component_explanations>
+
+Please explain the role of the component
+
+<component_name>{component_name}</component_name>
 
 Please return the component map in the requested format.
 `;
