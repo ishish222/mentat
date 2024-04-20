@@ -111,7 +111,12 @@ export function activate(context: vscode.ExtensionContext) {
 	}
 
 	async function flatten_and_map_() {
-		await flatten_and_map(chatViewProvider, true);
+		if(process.env.AWS_CACHE_USE === 'true') {
+			await flatten_and_map(chatViewProvider, true);
+		}
+		else {
+			await flatten_and_map(chatViewProvider, false);
+		}
 	}
 
 	async function flatten_and_map_wo_cache_() {

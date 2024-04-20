@@ -15,11 +15,6 @@ export class S3Cache extends BaseCache<Generation[]> {
             secretAccessKey: awsConfig.secretAccessKey,
             region: awsConfig.region
         });
-        console.log(`AWS_ACCESS_KEY_ID: ${awsConfig.accessKeyId}`);
-        console.log(`AWS_SECRET_ACCESS_KEY: ${awsConfig.secretAccessKey}`);
-        console.log(`AWS_REGION: ${awsConfig.region}`);
-        console.log(`AWS_CACHE_BUCKET: ${bucketName}`);
-        console.log(`AWS_CACHE_PREFIX: ${prefix}`);
 
         this.bucketName = bucketName;
         this.prefix = prefix;

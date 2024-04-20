@@ -181,11 +181,11 @@ Assistant:
 \`\`\`
 <response>
     <thinking>
-        <step num="1">Thinking step 1</step>
-        <step num="2">Thinking step 2</step>
-        <step num="3">Thinking step 3</step>
-        <step num="4">Thinking step 4</step>
-        <step num="5">Thinking step 5</step>
+        <step num="1"I took a deep breath and focused</step>
+        <step num="2">I carefully read through the flattened contract</step>
+        <step num="3">I identified individual components of the contract</step>
+        <step num="4">I mapped the components according to the rules</step>
+        <step num="5">I created the following responseaccording to the output_schema</step>
     </thinking>
     <components>
         <component>
@@ -242,14 +242,12 @@ You need to examine the contract and break it down into a map of its components.
 - modifiers
 - types
 
-These components are the building blocks of a Solidity contract. They are related to each other with 'needs' relationships.
-A component 'A' needs another components 'B' if understanding 'B' is necessary to understand 'A'.
-
-You are given a code containing a flattened contract and you are expected to break it down into its components. Note: we need 
-all contracts mapped. 
-
-We need the response to be parsable as XML so we can't have any additional chatter in the response. If you want to comment, 
-fit it into the XML format.
+<rules>
+  <rule num = "1">These components are the building blocks of a Solidity contract. They are related to each other with 'needs' relationships. A component 'A' needs another components 'B' if understanding 'B' is necessary to understand 'A'.</rule>
+  <rule num = "2">You are given a code containing a flattened contract and you are expected to break it down into its components. Note: we need all contracts mapped.</rule>
+  <rule num = "3">We need the response to be parsable as XML so we can't have any additional chatter in the response. If you want to comment, fit it into the output_schema.</rule>
+  <rule num = "4">No chatter outside output_schema!</rule>
+</rules>
 
 Example execution:
 
@@ -271,7 +269,7 @@ Please follow these thinking steps:
 
 Please return the component map in the following format:
 
-<output_format>
+<output_schema>
 \`\`\`
 <response>
     <thinking>
@@ -304,7 +302,7 @@ Please return the component map in the following format:
     </components>
 </response>
 \`\`\`
-</output_format>
+</output_schema>
 `;
 
 
@@ -315,7 +313,7 @@ Please break down the following flattened contract into its components:
 {flattened_contract}
 </flattened_contract_source>
 
-Please return the component map in the requested format.
+Please return the component map in the requested output_schema.
 `;
 
 export const parse_flattened_prompt_xml = ChatPromptTemplate.fromMessages([
