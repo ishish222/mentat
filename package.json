@@ -18,6 +18,14 @@
         "title": "mentat:explain"
       },
       {
+        "command": "mentat.refresh",
+        "title": "mentat:refresh"
+      },
+      {
+        "command": "mentat.decompose",
+        "title": "mentat:decompose"
+      },
+      {
         "command": "mentat.explain_wo_cache",
         "title": "mentat:explain (no cache)"
       },
@@ -28,6 +36,14 @@
       {
         "command": "mentat.flatten_and_map_wo_cache",
         "title": "mentat:flatten_and_map (no cache)"
+      },
+      {
+        "command": "mentat.map_contract",
+        "title": "mentat:map_contract"
+      },
+      {
+        "command": "mentat.map_contract_wo_cache",
+        "title": "mentat:map_contract (no cache)"
       },
       {
         "command": "mentat.change_model",
@@ -43,6 +59,14 @@
         {
           "command": "mentat.flatten_and_map_wo_cache",
           "group": "mentat@2"
+        },
+        {
+          "command": "mentat.decompose",
+          "group": "mentat@3"
+        },
+        {
+          "command": "mentat.refresh",
+          "group": "mentat@3"
         }
       ],
       "view/item/context": [
@@ -53,6 +77,14 @@
         {
           "command": "mentat.explain_wo_cache",
           "when": "view == mentat.treeview && viewItem == explanationNode"
+        },
+        {
+          "command": "mentat.map_contract",
+          "when": "view == mentat.treeview && viewItem == explanationNodeContract"
+        },
+        {
+          "command": "mentat.map_contract_wo_cache",
+          "when": "view == mentat.treeview && viewItem == explanationNodeContract"
         }
       ]
     },

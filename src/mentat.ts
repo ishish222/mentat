@@ -2,8 +2,9 @@ import * as vscode from 'vscode';
 import { OpenAI } from 'openai';
 import { ChatOpenAI } from "@langchain/openai";
 import { ChatOpenRouter, ChatOpenRouterCached } from "./openrouter";
-import { parse_flattened_prompt, parse_flattened_prompt_xml } from './prompts/flattening_prompt';
-import { explain_single_prompt, explain_single_prompt_xml } from './prompts/explain-single-node';
+import { parse_flattened_prompt_xml } from './prompts/flattening_prompt';
+import { explain_single_prompt_xml } from './prompts/explain-single-node';
+import { decompose_flattened_prompt_xml } from './prompts/decompose-contracts';
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { JsonOutputParser, XMLOutputParser } from "@langchain/core/output_parsers";
 import { S3Cache } from "./s3-cache";
@@ -183,6 +184,106 @@ export class Mentat {
         // return the response
 
         return 'test';    
+    }
+
+    public async decomposeFlattenedContract(
+        flattened_contract: string, 
+        use_cache: bool = true
+    ): Promise<Object> {
+        if(use_cache) {
+            await this.ensureLLMCached();
+            this.currentContract = flattened_contract;
+            if(this.llm_cached) {
+                // select the proper prompt
+                // combine into a chain with output parser
+                let prompt = decompose_flattened_prompt_xml;
+                let llm = this.llm_cached;
+
+                let output_parser = new XMLOutputParser();
+                let chain = prompt.pipe(llm).pipe(output_parser);
+
+                // invoke the chain
+                let response = await chain.invoke({
+                    "flattened_contract": flattened_contract,
+                });
+                
+                // return the response
+                return response;
+            }
+        }
+        else {
+            await this.ensureLLM();
+            this.currentContract = flattened_contract;
+            if(this.llm) {
+                // select the proper prompt
+                // combine into a chain with output parser
+
+                let prompt = decompose_flattened_prompt_xml;
+                let llm = this.llm;
+
+                let output_parser = new XMLOutputParser();
+                let chain = prompt.pipe(llm).pipe(output_parser);
+
+                // invoke the chain
+                let response = await chain.invoke({
+                    "flattened_contract": flattened_contract,
+                });
+                
+                // return the response
+                return response;
+            }
+        }
+        return 'LLM error';    
+    }
+
+    public async mapContract(
+        contract_source: string, 
+        use_cache: bool = true
+    ): Promise<Object> {
+        if(use_cache) {
+            await this.ensureLLMCached();
+            
+            if(this.llm_cached) {
+                // select the proper prompt
+                // combine into a chain with output parser
+                let prompt = parse_flattened_prompt_xml;
+                let llm = this.llm_cached;
+
+                let output_parser = new XMLOutputParser();
+                let chain = prompt.pipe(llm).pipe(output_parser);
+
+                // invoke the chain
+                let response = await chain.invoke({
+                    "flattened_contract": contract_source,
+                });
+                
+                // return the response
+                return response;
+            }
+        }
+        else {
+            await this.ensureLLM();
+            
+            if(this.llm) {
+                // select the proper prompt
+                // combine into a chain with output parser
+
+                let prompt = parse_flattened_prompt_xml;
+                let llm = this.llm;
+
+                let output_parser = new XMLOutputParser();
+                let chain = prompt.pipe(llm).pipe(output_parser);
+
+                // invoke the chain
+                let response = await chain.invoke({
+                    "flattened_contract": contract_source,
+                });
+                
+                // return the response
+                return response;
+            }
+        }
+        return 'LLM error';    
     }
 
     public async parseFlattenedContract(
