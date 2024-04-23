@@ -30,6 +30,14 @@
         "title": "mentat:map_contract"
       },
       {
+        "command": "mentat.map_contract",
+        "title": "mentat:map_contract"
+      },
+      {
+        "command": "mentat.map_contract_wo_cache",
+        "title": "mentat:map_contract (no cache)"
+      },
+      {
         "command": "mentat.change_model",
         "title": "mentat:change_model"
       }
@@ -43,6 +51,14 @@
         {
           "command": "mentat.refresh_tree",
           "group": "mentat@2"
+        },
+        {
+          "command": "mentat.decompose",
+          "group": "mentat@3"
+        },
+        {
+          "command": "mentat.refresh",
+          "group": "mentat@3"
         }
       ],
       "view/item/context": [

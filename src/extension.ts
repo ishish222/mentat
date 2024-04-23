@@ -52,7 +52,6 @@ export function activate(context: vscode.ExtensionContext) {
 		else {
 			await metntatViewProvider.decomposeFlattenedContract(false);
 		}
-
 	}
 
 	async function map_contract_(node: ExplanationNode) {
