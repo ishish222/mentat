@@ -6,14 +6,30 @@ const workspace = require("solidity-workspace");
 import { Mentat } from './mentat';
 import { ExplanationNodeProvider, ExplanationNode } from './providers/tree-view-provider';
 import { ExplanationWebview } from './providers/explanation-view-provider';
-import * as dotenv from 'dotenv';
-import * as path from 'path';
 
-type ExtendedDocumentSymbol = vscode.DocumentSymbol & {
-	explained: boolean;
-	explanation: string;
-	refers: ExtendedDocumentSymbol[];
-  };
+
+async function decompose(
+	document: vscode.TextDocument|undefined,
+): Promise<workspace.Workspace | void> {
+	const ws = new workspace.Workspace();
+	const current_document = document;
+
+	if (current_document) {
+		try {
+			let flat = await flatten(current_document);
+			await ws.add(current_document.uri.fsPath, { content: flat });
+			await ws.withParserReady();
+			
+			return ws;
+		}
+		catch (error) {
+			console.error(`Error adding file to the workspace: ${error}`);
+		}
+	}
+	else
+		console.error('No active document found.');
+
+}
 
 async function flatten(
 	document: vscode.TextDocument,
@@ -44,7 +60,7 @@ async function flatten(
 }
 
 async function flatten_and_map(
-	chatViewProvider: MentatViewProvider,
+	metntatViewProvider: MentatViewProvider,
 	use_cache: boolean = true,
 ): Promise<void> {
 	const current_document = vscode.window.activeTextEditor?.document;
@@ -65,11 +81,11 @@ async function flatten_and_map(
 		return;
 	}
 
-	chatViewProvider.explainFlattenedContract(flatten_and_map_result, use_cache);
+	metntatViewProvider.explainFlattenedContract(flatten_and_map_result, use_cache);
 }
 
 async function query(
-	chatViewProvider: MentatViewProvider,
+	metntatViewProvider: MentatViewProvider,
 ): Promise<void> {
 }
 
@@ -91,38 +107,62 @@ export function activate(context: vscode.ExtensionContext) {
 	vscode.window.createTreeView('mentat.treeview', {treeDataProvider: treeDataProvider});
 
 	const mentat = new Mentat(context);
-	const chatViewProvider = new MentatViewProvider(context, treeDataProvider, mentat);
+	const metntatViewProvider = new MentatViewProvider(context, treeDataProvider, mentat);
 	const explanationViewProvider = new ExplanationWebview(context);
 
 	vscode.window.registerWebviewViewProvider('mentat.explanation', explanationViewProvider);
-	vscode.window.registerWebviewViewProvider("mentat.view", chatViewProvider, {
+	vscode.window.registerWebviewViewProvider("mentat.view", metntatViewProvider, {
 		webviewOptions: { retainContextWhenHidden: true }
 	})
 
 	async function explain__(node: ExplanationNode) {
-		await chatViewProvider.explainNode(node, true);
+		await metntatViewProvider.explainNode(node, true);
 	}
 
 	async function explain_wo_cache_(node: ExplanationNode) {
-		await chatViewProvider.explainNode(node, false);
+		await metntatViewProvider.explainNode(node, false);
 	}
 
 	async function flatten_and_map_() {
 		let use_cache = vscode.workspace.getConfiguration('mentat').get('cache.S3CacheEnable');
 		if(use_cache) {
-			await flatten_and_map(chatViewProvider, true);
+			await flatten_and_map(metntatViewProvider, true);
 		}
 		else {
-			await flatten_and_map(chatViewProvider, false);
+			await flatten_and_map(metntatViewProvider, false);
 		}
+	}
+
+	async function decompose_() {
+		let current_document = vscode.window.activeTextEditor?.document;
+		await metntatViewProvider.flattenContract(current_document);
+		let use_cache = vscode.workspace.getConfiguration('mentat').get('cache.S3CacheEnable');
+		if(use_cache) {
+			await metntatViewProvider.decomposeFlattenedContract(true);
+		}
+		else {
+			await metntatViewProvider.decomposeFlattenedContract(false);
+		}
+
+	}
+
+	async function map_contract_(node: ExplanationNode) {
+		let use_cache = vscode.workspace.getConfiguration('mentat').get('cache.S3CacheEnable');
+		if(use_cache) {
+			await metntatViewProvider.mapContract(node);
+		}
+		else {
+			await metntatViewProvider.mapContract(node);
+		}
+
 	}
 
 	async function flatten_and_map_wo_cache_() {
-		await flatten_and_map(chatViewProvider, false);
+		await flatten_and_map(metntatViewProvider, false);
 	}
 
 	async function query_() { 
-		await query(chatViewProvider); 
+		await query(metntatViewProvider); 
 	}
 
 	async function changeModel_() {
@@ -136,8 +176,12 @@ export function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(
 		vscode.commands.registerCommand("mentat.change_model", changeModel_),
+		vscode.commands.registerCommand("mentat.decompose", decompose_),
 		vscode.commands.registerCommand("mentat.flatten_and_map_wo_cache", flatten_and_map_wo_cache_),
 		vscode.commands.registerCommand("mentat.flatten_and_map", flatten_and_map_),
+		vscode.commands.registerCommand("mentat.map_contract", (node) => map_contract_(node)),
+		vscode.commands.registerCommand("mentat.map_contract_wo_cache", (node) => map_contract_(node)),
+		vscode.commands.registerCommand("mentat.refresh", () => treeDataProvider.refresh()),
 		vscode.commands.registerCommand("node.select", (node) => {
 			explanationViewProvider.updateContent(node.explanation || "No explanation available.");
 		}),

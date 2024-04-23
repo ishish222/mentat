@@ -1,11 +1,17 @@
 import * as vscode from 'vscode';
 import { Mentat } from '../mentat';
 import { ExplanationNodeProvider } from './tree-view-provider';
-import { ExplanationNode } from './tree-view-provider';
+import { ExplanationNode, ExplanationNodeContract } from './tree-view-provider';
+const workspace = require("solidity-workspace");
+import {extractTextFromString } from '../utils';
 
 export default class MentatViewProvider implements vscode.WebviewViewProvider {
     private webView?: vscode.WebviewView;
     private message?: any;
+    private currentWorkspace?: workspace.Workspace;
+    private currentDocument?: vscode.TextDocument;
+    private currentFlattenedContract?: string;
+    
 
     constructor(
         private context: vscode.ExtensionContext, 
@@ -38,6 +44,91 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
             this.message = null;
         }
     }
+
+    public async flattenContract(
+        document: vscode.TextDocument,
+    )
+    {
+        this.currentDocument = document;
+        this.currentWorkspace = new workspace.Workspace();
+
+		try {
+			await this.currentWorkspace.add(this.currentDocument.uri.fsPath, { content: this.currentDocument.getText() });
+			await this.currentWorkspace.withParserReady();
+			
+			let sourceUnit = this.currentWorkspace.get(this.currentDocument.uri.fsPath);
+			if (!sourceUnit) {
+				console.error(`ERROR: could not find parsed sourceUnit for file ${this.currentDocument.uri.fsPath}`)
+				return undefined;
+			}
+			this.currentFlattenedContract = sourceUnit.flatten();
+            console.log(`Flattened source unit: ${this.currentFlattenedContract}`);
+		}
+		catch (error) {
+			console.error(`Error adding file to the workspace: ${error}`);
+		}
+    }
+
+    public async decomposeFlattenedContract(
+        use_cache: boolean = true
+    )
+    {
+        if (!this.webView) {
+            await vscode.commands.executeCommand('mentat.view.focus');
+        } else {
+            this.webView?.show?.(true);
+        }
+
+        let message = `Requesting decomposition of the flattened contract.`;
+        
+        this.sendMessageToWebView({ 
+            type: 'operator', 
+            value: message
+        });
+
+        console.log('decomposing flattened contract')
+        let output = await this.mentat.decomposeFlattenedContract(this.currentFlattenedContract, use_cache);
+
+        this.treeDataProvider.clearExplanationNodes();
+        this.treeDataProvider.loadExplanationNodes_xml(true, output);
+        this.treeDataProvider.refresh();
+
+        this.sendMessageToWebView({ 
+            type: 'assistant', 
+            value: 'Mapping retrieved'
+        });
+    }
+
+    public async mapContract(
+        node: ExplanationNodeContract,
+        use_cache: boolean = true
+    )
+    {
+        if (!this.webView) {
+            await vscode.commands.executeCommand('mentat.view.focus');
+        } else {
+            this.webView?.show?.(true);
+        }
+
+        let message = `Requesting mapping of the contract.`;
+        
+        this.sendMessageToWebView({ 
+            type: 'operator', 
+            value: message
+        });
+
+        let output = await this.mentat.mapContract(node.source, use_cache);
+
+        node.clearExplanationNodeContracts();
+        node.loadExplanationNodes_xml(output);
+        this.treeDataProvider.refresh();
+
+        this.sendMessageToWebView({ 
+            type: 'assistant', 
+            value: 'Mapping retrieved'
+        });
+    }
+
 
     public async explainFlattenedContract(
         flattened_contract: string,
