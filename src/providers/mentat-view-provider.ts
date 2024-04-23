@@ -3,7 +3,6 @@ import { Mentat } from '../mentat';
 import { ExplanationNodeProvider } from './tree-view-provider';
 import { ExplanationNode, ExplanationNodeContract } from './tree-view-provider';
 const workspace = require("solidity-workspace");
-import {extractTextFromString } from '../utils';
 
 export default class MentatViewProvider implements vscode.WebviewViewProvider {
     private webView?: vscode.WebviewView;
