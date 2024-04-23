@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 
 export class ExplanationNodeProvider implements vscode.TreeDataProvider<ExplanationNode> {
-  private tree: ExplanationNode[] = [];
+  public tree: ExplanationNode[] = [];
   private _onDidChangeTreeData: vscode.EventEmitter<ExplanationNode | undefined | null | void> = new vscode.EventEmitter<ExplanationNode | undefined | null | void>();
   readonly onDidChangeTreeData: vscode.Event<ExplanationNode | undefined | null | void> = this._onDidChangeTreeData.event;
 
@@ -244,3 +244,66 @@ export class ExplanationNodeContract extends ExplanationNode {
   }
 }
 
+export function serializeNode(node: ExplanationNode, map = new Map()): any {
+  // Handle circular references
+  //if (map.has(node)) {
+  //  return { $ref: map.get(node) };
+  //}
+  
+  const serialized = {
+    label: node.label,
+    collapsibleState: node.collapsibleState,
+    children: [],
+    needed: node.needed,
+    explanation: node.explanation,
+    explained: node.explained,
+    contextValue: node.contextValue,
+  };
+
+  if (node instanceof ExplanationNodeContract) {
+    serialized['source'] = node.source;
+  }
+
+  map.set(node, serialized);
+
+  // Serialize children, which might include the current node itself
+  serialized.children = node.children.map(child => serializeNode(child, map));
+
+  return serialized;
+}
+
+export function deserializeNode(serialized: any, map = new Map()): ExplanationNode {
+  //if (serialized.$ref) {
+  //  return map.get(serialized.$ref);
+  //}
+
+  let node;
+  if (serialized.contextValue === 'explanationNodeContract') {
+    node = new ExplanationNodeContract(
+      serialized.label,
+      serialized.collapsibleState,
+      [],
+      serialized.needed,
+      serialized.explanation,
+      serialized.explained,
+      serialized.source
+    );
+  } else {
+    node = new ExplanationNode(
+      serialized.label,
+      serialized.collapsibleState,
+      [],
+      serialized.needed,
+      serialized.explanation,
+      serialized.explained
+    );
+  }
+
+  map.set(serialized, node);
+
+  serialized.children.forEach((child: any) => {
+    node.children.push(deserializeNode(child, map));
+  });
+
+  return node;
+}

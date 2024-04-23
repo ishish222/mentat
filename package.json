@@ -30,16 +30,20 @@
         "title": "mentat:map_contract"
       },
       {
-        "command": "mentat.map_contract",
-        "title": "mentat:map_contract"
-      },
-      {
-        "command": "mentat.map_contract_wo_cache",
-        "title": "mentat:map_contract (no cache)"
-      },
-      {
         "command": "mentat.change_model",
         "title": "mentat:change_model"
+      },
+      {
+        "command": "mentat.save_tree",
+        "title": "mentat:save_tree"
+      },
+      {
+        "command": "mentat.load_tree",
+        "title": "mentat:load_tree"
+      },
+      {
+        "command": "mentat.save_trees",
+        "title": "mentat:save_trees"
       }
     ],
     "menus": {
@@ -51,6 +55,18 @@
         {
           "command": "mentat.refresh_tree",
           "group": "mentat@2"
+        },
+        {
+          "command": "mentat.save_tree",
+          "group": "mentat@3"
+        },
+        {
+          "command": "mentat.load_tree",
+          "group": "mentat@4"
+        },
+        {
+          "command": "mentat.save_trees",
+          "group": "mentat@5"
         }
       ],
       "view/item/context": [

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { Mentat } from '../mentat';
-import { ExplanationNodeProvider } from './tree-view-provider';
-import { ExplanationNode, ExplanationNodeContract } from './tree-view-provider';
+import { serializeNode, deserializeNode } from './tree-view-provider';
+import { ExplanationNodeProvider, ExplanationNode, ExplanationNodeContract } from './tree-view-provider';
 const workspace = require("solidity-workspace");
 
 export default class MentatViewProvider implements vscode.WebviewViewProvider {
@@ -10,13 +10,51 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
     private currentWorkspace?: workspace.Workspace;
     private currentDocument?: vscode.TextDocument;
     private currentFlattenedContract?: string;
-    
+    private trees = new Map<string, string>();
 
     constructor(
         private context: vscode.ExtensionContext, 
         private treeDataProvider: ExplanationNodeProvider,
         private mentat: Mentat
     ) {
+    }
+
+    public async saveTree() {
+        if (this.currentDocument) {
+            const serializedTree = this.treeDataProvider.tree.map(node => serializeNode(node));
+            this.trees.set(this.currentDocument.uri.fsPath, JSON.stringify(serializedTree));
+        }
+    }
+
+    public async loadTree() {
+        this.currentDocument = vscode.window.activeTextEditor?.document;
+        if (this.currentDocument) {
+            const treeJson = this.trees.get(this.currentDocument.uri.fsPath);
+            if (treeJson) {
+                const serializedTree = JSON.parse(treeJson) as any[];
+                const deserializedTree = serializedTree.map(serializedNode => deserializeNode(serializedNode));
+                this.treeDataProvider.tree = deserializedTree;
+            }
+            this.treeDataProvider.refresh();
+        }
+    }
+
+    public async saveTrees(context: vscode.ExtensionContext) {
+        const treeData = Array.from(this.trees.entries());
+        const serializedData = JSON.stringify(treeData);
+        context.globalState.update('trees', serializedData);
+    }
+
+    public async loadTrees(context: vscode.ExtensionContext) {
+        const serializedData = context.globalState.get<string>('trees');
+        if (serializedData) {
+            const treeData = JSON.parse(serializedData) as Array<[string, string]>;
+            const trees = new Map<string, string>(treeData);
+            this.trees = trees;
+    
+            // If needed, load the tree for the current document
+            this.loadTree();
+        }
     }
 
     public resolveWebviewView(

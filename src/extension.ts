@@ -31,6 +31,8 @@ export function activate(context: vscode.ExtensionContext) {
 
 	const mentat = new Mentat(context);
 	const metntatViewProvider = new MentatViewProvider(context, treeDataProvider, mentat);
+	metntatViewProvider.loadTrees(context);
+
 	const explanationViewProvider = new ExplanationWebview(context);
 
 	vscode.window.registerWebviewViewProvider('mentat.explanation', explanationViewProvider);
@@ -82,6 +84,10 @@ export function activate(context: vscode.ExtensionContext) {
 		explanationViewProvider.updateContent(node.explanation || "No explanation available.");
 	}
 
+	async function save_() {
+		metntatViewProvider.saveTree()
+	}
+
 	context.subscriptions.push(
 		vscode.commands.registerCommand("mentat.change_model", changeModel_),
 		vscode.commands.registerCommand("mentat.decompose", decompose_),
@@ -89,12 +95,15 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.commands.registerCommand("mentat.map_contract_wo_cache", (node) => map_contract_(node)),
 		vscode.commands.registerCommand("mentat.refresh_tree", () => treeDataProvider.refresh()),
 		vscode.commands.registerCommand("mentat.explain", (node) => explain_(node)),
+		vscode.commands.registerCommand("mentat.save_tree", () => metntatViewProvider.saveTree()),
+		vscode.commands.registerCommand("mentat.save_trees", () => metntatViewProvider.saveTrees(context)),
+		vscode.commands.registerCommand("mentat.load_tree", () => metntatViewProvider.loadTree()),
 		vscode.commands.registerCommand("node.select", (node) => node_select_(node)),
 	);
-
 
 }
 
 // This method is called when your extension is deactivated
 export function deactivate() {
+	
 }
