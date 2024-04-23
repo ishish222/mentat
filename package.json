@@ -51,14 +51,6 @@
         {
           "command": "mentat.refresh_tree",
           "group": "mentat@2"
-        },
-        {
-          "command": "mentat.decompose",
-          "group": "mentat@3"
-        },
-        {
-          "command": "mentat.refresh",
-          "group": "mentat@3"
         }
       ],
       "view/item/context": [
