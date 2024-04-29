@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { Mentat } from '../mentat';
-import { ExplanationNodeProvider } from './tree-view-provider';
-import { ExplanationNode, ExplanationNodeContract } from './tree-view-provider';
+import { serializeNode, deserializeNode } from './tree-view-provider';
+import { ExplanationNodeProvider, ExplanationNode, ExplanationNodeContract } from './tree-view-provider';
 const workspace = require("solidity-workspace");
 
 export default class MentatViewProvider implements vscode.WebviewViewProvider {
@@ -10,13 +10,52 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
     private currentWorkspace?: workspace.Workspace;
     private currentDocument?: vscode.TextDocument;
     private currentFlattenedContract?: string;
-    
+    private trees = new Map<string, string>();
 
     constructor(
         private context: vscode.ExtensionContext, 
         private treeDataProvider: ExplanationNodeProvider,
         private mentat: Mentat
     ) {
+    }
+
+    public async saveTree() {
+        if (this.currentDocument) {
+            const serializedTree = this.treeDataProvider.tree.map(node => serializeNode(node));
+            let stringified = JSON.stringify(serializedTree);
+            this.trees.set(this.currentDocument.uri.fsPath, stringified);
+        }
+    }
+
+    public async loadTree() {
+        this.currentDocument = vscode.window.activeTextEditor?.document;
+        if (this.currentDocument) {
+            const treeJson = this.trees.get(this.currentDocument.uri.fsPath);
+            if (treeJson) {
+                const serializedTree = JSON.parse(treeJson) as any[];
+                const deserializedTree = serializedTree.map(serializedNode => deserializeNode(null, serializedNode));
+                this.treeDataProvider.tree = deserializedTree;
+                this.treeDataProvider.refresh();
+            }
+        }
+    }
+
+    public async saveTrees(context: vscode.ExtensionContext) {
+        const treeData = Array.from(this.trees.entries());
+        const serializedData = JSON.stringify(treeData);
+        context.globalState.update('trees', serializedData);
+    }
+
+    public async loadTrees(context: vscode.ExtensionContext) {
+        const serializedData = context.globalState.get<string>('trees');
+        if (serializedData) {
+            const treeData = JSON.parse(serializedData) as Array<[string, string]>;
+            const trees = new Map<string, string>(treeData);
+            this.trees = trees;
+    
+            // If needed, load the tree for the current document
+            this.loadTree();
+        }
     }
 
     public resolveWebviewView(
@@ -44,6 +83,10 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
         }
     }
 
+    public async updateModel(model_name: string) {
+        this.mentat.updateModel(model_name);
+    }
+
     public async flattenContract(
         document: vscode.TextDocument,
     )
@@ -69,7 +112,8 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
     }
 
     public async decomposeFlattenedContract(
-        use_cache: boolean = true
+        use_cache: boolean = true,
+        inv_cache: boolean = false
     )
     {
         if (!this.webView) {
@@ -86,7 +130,7 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
         });
 
         console.log('decomposing flattened contract')
-        let output = await this.mentat.decomposeFlattenedContract(this.currentFlattenedContract, use_cache);
+        let output = await this.mentat.decomposeFlattenedContract(this.currentFlattenedContract, use_cache, inv_cache);
 
         this.treeDataProvider.clearExplanationNodes();
         this.treeDataProvider.loadExplanationNodes_xml(true, output);
@@ -100,7 +144,8 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
 
     public async mapContract(
         node: ExplanationNodeContract,
-        use_cache: boolean = true
+        use_cache: boolean = true,
+        inv_cache: boolean = false
     )
     {
         if (!this.webView) {
@@ -116,7 +161,7 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
             value: message
         });
 
-        let output = await this.mentat.mapContract(node.source, use_cache);
+        let output = await this.mentat.mapContract(node, this.currentFlattenedContract, use_cache, inv_cache);
 
         node.clearExplanationNodeContracts();
         node.loadExplanationNodes_xml(output);
@@ -128,41 +173,10 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
         });
     }
 
-
-    public async explainFlattenedContract(
-        flattened_contract: string,
-        use_cache: boolean = true
-    ) {
-        // focus on mentat view
-        if (!this.webView) {
-            await vscode.commands.executeCommand('mentat.view.focus');
-        } else {
-            this.webView?.show?.(true);
-        }
-
-        let message = `Requesting mapping of the flattened contract.`;
-        
-        this.sendMessageToWebView({ 
-            type: 'operator', 
-            value: message
-        });
-
-        console.log('parsing flattened contract')
-        let output = await this.mentat.parseFlattenedContract(flattened_contract, use_cache);
-
-        this.treeDataProvider.clearExplanationNodes();
-        this.treeDataProvider.loadExplanationNodes_xml(output);
-        this.treeDataProvider.refresh();
-
-        this.sendMessageToWebView({ 
-            type: 'assistant', 
-            value: 'Mapping retrieved'
-        });
-    }
-
     public async explainNode(
         node: ExplanationNode,
-        use_cache: boolean = true
+        use_cache: boolean = true,
+        inv_cache: boolean = false
     ) {
         // check if all children are explained
         let all_explained = true;
@@ -190,7 +204,7 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
             }
         });
 
-        let output = await this.mentat.explainNode(node.label, explanations, use_cache);
+        let output = await this.mentat.explainNode(node, explanations, use_cache, inv_cache);
         
         node.explanation = output.explanation[1].explanation;
         node.explained = true;

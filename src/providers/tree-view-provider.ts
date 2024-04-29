@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 
 export class ExplanationNodeProvider implements vscode.TreeDataProvider<ExplanationNode> {
-  private tree: ExplanationNode[] = [];
+  public tree: ExplanationNode[] = [];
   private _onDidChangeTreeData: vscode.EventEmitter<ExplanationNode | undefined | null | void> = new vscode.EventEmitter<ExplanationNode | undefined | null | void>();
   readonly onDidChangeTreeData: vscode.Event<ExplanationNode | undefined | null | void> = this._onDidChangeTreeData.event;
 
@@ -104,7 +104,8 @@ export class ExplanationNodeProvider implements vscode.TreeDataProvider<Explanat
           needs,
           '',
           false,
-          component[1]['source_code']
+          this,
+          ''
         );
       }
       else {
@@ -114,7 +115,8 @@ export class ExplanationNodeProvider implements vscode.TreeDataProvider<Explanat
           [],
           needs,
           '',
-          false
+          false,
+          this
         );
       }        
       this.tree.push(node);
@@ -166,7 +168,8 @@ export class ExplanationNode extends vscode.TreeItem {
     public children: ExplanationNode[] = [],
     public needed: Array<string> = [],
     public explanation: string,
-    public explained: boolean = false
+    public explained: boolean = false,
+    public parent: ExplanationNode|null = null
   ) {
     super(label, collapsibleState);
     this.contextValue = 'explanationNode';
@@ -181,6 +184,7 @@ export class ExplanationNodeContract extends ExplanationNode {
     public needed: Array<string> = [],
     public explanation: string,
     public explained: boolean = false,
+    public parent: ExplanationNode|null = null,
     public source: string
   ) {
     super(label, collapsibleState, children, needed, explanation, explained);
@@ -211,7 +215,8 @@ export class ExplanationNodeContract extends ExplanationNode {
         [],
         needs,
         '',
-        false
+        false,
+        this
       );
       this.children.push(node);
       //this.explained = true;
@@ -244,3 +249,68 @@ export class ExplanationNodeContract extends ExplanationNode {
   }
 }
 
+export function serializeNode(node: ExplanationNode, map = new Map()): any {
+  // Handle circular references
+  //if (map.has(node)) {
+  //  return { $ref: map.get(node) };
+  //}
+  
+  const serialized = {
+    label: node.label,
+    collapsibleState: node.collapsibleState,
+    children: [],
+    needed: node.needed,
+    explanation: node.explanation,
+    explained: node.explained,
+    contextValue: node.contextValue
+  };
+
+  if (node instanceof ExplanationNodeContract) {
+    serialized['source'] = node.source;
+  }
+
+  map.set(node, serialized);
+
+  // Serialize children, which might include the current node itself
+  serialized.children = node.children.map(child => serializeNode(child, map));
+
+  return serialized;
+}
+
+export function deserializeNode(parent: ExplanationNode|null, serialized: any, map = new Map()): ExplanationNode {
+  //if (serialized.$ref) {
+  //  return map.get(serialized.$ref);
+  //}
+
+  let node;
+  if (serialized.contextValue === 'explanationNodeContract') {
+    node = new ExplanationNodeContract(
+      serialized.label,
+      serialized.collapsibleState,
+      [],
+      serialized.needed,
+      serialized.explanation,
+      serialized.explained,
+      parent,
+      serialized.source
+    );
+  } else {
+    node = new ExplanationNode(
+      serialized.label,
+      serialized.collapsibleState,
+      [],
+      serialized.needed,
+      serialized.explanation,
+      serialized.explained,
+      parent
+    );
+  }
+
+  map.set(serialized, node);
+
+  serialized.children.forEach((child: any) => {
+    node.children.push(deserializeNode(serialized, child, map));
+  });
+
+  return node;
+}

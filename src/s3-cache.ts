@@ -7,6 +7,7 @@ export class S3Cache extends BaseCache<Generation[]> {
     private s3: S3;
     private bucketName: string;
     private prefix: string;
+    private invalidate_next: boolean = false;
 
     constructor(awsConfig: { accessKeyId: string; secretAccessKey: string; region: string }, bucketName: string, prefix: string = '') {
         super();
@@ -28,6 +29,12 @@ export class S3Cache extends BaseCache<Generation[]> {
      */
     async lookup(prompt: string, llmKey: string): Promise<Generation[] | null> {
         const key = this.getCacheKey(prompt, llmKey);
+        if(this.invalidate_next) {
+            await this.delete(prompt, llmKey);
+            this.invalidate_next = false;
+            return null;
+        }
+        
         try {
             const result = await this.s3.getObject({
                 Bucket: this.bucketName,
@@ -66,6 +73,22 @@ export class S3Cache extends BaseCache<Generation[]> {
             }).promise();
         } catch (error) {
             console.error('Error updating object in S3:', error);
+        }
+    }
+
+    async set_invalidate_next() {
+        this.invalidate_next = true;
+    }
+
+    async delete(prompt: string, llmKey: string): Promise<void> {
+        const key = this.getCacheKey(prompt, llmKey);
+        try {
+            await this.s3.deleteObject({
+                Bucket: this.bucketName,
+                Key: `${this.prefix}/${key}`
+            }).promise();
+        } catch (error) {
+            console.error('Error deleting object from S3:', error);
         }
     }
 

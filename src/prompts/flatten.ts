@@ -310,7 +310,7 @@ let parse_flattened_human_xml_str = `
 Please break down the following flattened contract into its components:
 
 <flattened_contract_source>
-{flattened_contract}
+{source}
 </flattened_contract_source>
 
 Please return the component map in the requested output_schema.
