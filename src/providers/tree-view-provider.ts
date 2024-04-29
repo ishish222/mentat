@@ -104,7 +104,8 @@ export class ExplanationNodeProvider implements vscode.TreeDataProvider<Explanat
           needs,
           '',
           false,
-          component[1]['source_code']
+          this,
+          ''
         );
       }
       else {
@@ -114,7 +115,8 @@ export class ExplanationNodeProvider implements vscode.TreeDataProvider<Explanat
           [],
           needs,
           '',
-          false
+          false,
+          this
         );
       }        
       this.tree.push(node);
@@ -166,7 +168,8 @@ export class ExplanationNode extends vscode.TreeItem {
     public children: ExplanationNode[] = [],
     public needed: Array<string> = [],
     public explanation: string,
-    public explained: boolean = false
+    public explained: boolean = false,
+    public parent: ExplanationNode|null = null
   ) {
     super(label, collapsibleState);
     this.contextValue = 'explanationNode';
@@ -181,6 +184,7 @@ export class ExplanationNodeContract extends ExplanationNode {
     public needed: Array<string> = [],
     public explanation: string,
     public explained: boolean = false,
+    public parent: ExplanationNode|null = null,
     public source: string
   ) {
     super(label, collapsibleState, children, needed, explanation, explained);
@@ -211,7 +215,8 @@ export class ExplanationNodeContract extends ExplanationNode {
         [],
         needs,
         '',
-        false
+        false,
+        this
       );
       this.children.push(node);
       //this.explained = true;
@@ -257,7 +262,7 @@ export function serializeNode(node: ExplanationNode, map = new Map()): any {
     needed: node.needed,
     explanation: node.explanation,
     explained: node.explained,
-    contextValue: node.contextValue,
+    contextValue: node.contextValue
   };
 
   if (node instanceof ExplanationNodeContract) {
@@ -272,7 +277,7 @@ export function serializeNode(node: ExplanationNode, map = new Map()): any {
   return serialized;
 }
 
-export function deserializeNode(serialized: any, map = new Map()): ExplanationNode {
+export function deserializeNode(parent: ExplanationNode|null, serialized: any, map = new Map()): ExplanationNode {
   //if (serialized.$ref) {
   //  return map.get(serialized.$ref);
   //}
@@ -286,6 +291,7 @@ export function deserializeNode(serialized: any, map = new Map()): ExplanationNo
       serialized.needed,
       serialized.explanation,
       serialized.explained,
+      parent,
       serialized.source
     );
   } else {
@@ -295,14 +301,15 @@ export function deserializeNode(serialized: any, map = new Map()): ExplanationNo
       [],
       serialized.needed,
       serialized.explanation,
-      serialized.explained
+      serialized.explained,
+      parent
     );
   }
 
   map.set(serialized, node);
 
   serialized.children.forEach((child: any) => {
-    node.children.push(deserializeNode(child, map));
+    node.children.push(deserializeNode(serialized, child, map));
   });
 
   return node;

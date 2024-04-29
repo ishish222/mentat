@@ -40,31 +40,37 @@ export function activate(context: vscode.ExtensionContext) {
 		webviewOptions: { retainContextWhenHidden: true }
 	})
 
-	async function explain_(node: ExplanationNode) {
-		await metntatViewProvider.explainNode(node, true);
-	}
-
-	async function decompose_() {
+	async function decompose_(inv_cache: boolean) {
 		let current_document = vscode.window.activeTextEditor?.document;
 		await metntatViewProvider.flattenContract(current_document);
 		let use_cache = vscode.workspace.getConfiguration('mentat').get('cache.S3CacheEnable');
 		if(use_cache) {
-			await metntatViewProvider.decomposeFlattenedContract(true);
+			await metntatViewProvider.decomposeFlattenedContract(true, inv_cache);
 		}
 		else {
-			await metntatViewProvider.decomposeFlattenedContract(false);
+			await metntatViewProvider.decomposeFlattenedContract(false, inv_cache);
 		}
 	}
 
-	async function map_contract_(node: ExplanationNode) {
+	async function map_contract_(node: ExplanationNode, inv_cache: boolean) {
 		let use_cache = vscode.workspace.getConfiguration('mentat').get('cache.S3CacheEnable');
 		if(use_cache) {
-			await metntatViewProvider.mapContract(node);
+			await metntatViewProvider.mapContract(node, true, inv_cache);
 		}
 		else {
-			await metntatViewProvider.mapContract(node);
+			await metntatViewProvider.mapContract(node, false, inv_cache);
 		}
 
+	}
+
+	async function explain_(node: ExplanationNode, inv_cache: boolean) {
+		let use_cache = vscode.workspace.getConfiguration('mentat').get('cache.S3CacheEnable');
+		if(use_cache) {
+			await metntatViewProvider.explainNode(node, true, inv_cache);
+		}
+		else {
+			await metntatViewProvider.explainNode(node, false, inv_cache);
+		}
 	}
 
 	async function query_() { 
@@ -77,6 +83,7 @@ export function activate(context: vscode.ExtensionContext) {
 			ignoreFocusOut: true,
 		});
 		context.globalState.update('openrouter-api-model', apiModelString);
+		metntatViewProvider.updateModel(apiModelString);
 		vscode.window.showInformationMessage(`Model string updated to: ${apiModelString}`);
 	}		
 
@@ -90,11 +97,13 @@ export function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(
 		vscode.commands.registerCommand("mentat.change_model", changeModel_),
-		vscode.commands.registerCommand("mentat.decompose", decompose_),
-		vscode.commands.registerCommand("mentat.map_contract", (node) => map_contract_(node)),
-		vscode.commands.registerCommand("mentat.map_contract_wo_cache", (node) => map_contract_(node)),
+		vscode.commands.registerCommand("mentat.decompose", () => decompose_(false)),
+		vscode.commands.registerCommand("mentat.decompose_icache", () => decompose_(true)),
+		vscode.commands.registerCommand("mentat.map_contract", (node) => map_contract_(node, false)),
+		vscode.commands.registerCommand("mentat.map_contract_icache", (node) => map_contract_(node, true)),
 		vscode.commands.registerCommand("mentat.refresh_tree", () => treeDataProvider.refresh()),
-		vscode.commands.registerCommand("mentat.explain", (node) => explain_(node)),
+		vscode.commands.registerCommand("mentat.explain", (node) => explain_(node, false)),
+		vscode.commands.registerCommand("mentat.explain_icache", (node) => explain_(node, true)),
 		vscode.commands.registerCommand("mentat.save_tree", () => metntatViewProvider.saveTree()),
 		vscode.commands.registerCommand("mentat.save_trees", () => metntatViewProvider.saveTrees(context)),
 		vscode.commands.registerCommand("mentat.load_tree", () => metntatViewProvider.loadTree()),
@@ -105,5 +114,5 @@ export function activate(context: vscode.ExtensionContext) {
 
 // This method is called when your extension is deactivated
 export function deactivate() {
-	
+
 }

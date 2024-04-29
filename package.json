@@ -18,6 +18,10 @@
         "title": "mentat:explain"
       },
       {
+        "command": "mentat.explain_icache",
+        "title": "mentat:explain (inv. cache)"
+      },
+      {
         "command": "mentat.refresh_tree",
         "title": "mentat:refresh_tree"
       },
@@ -26,8 +30,16 @@
         "title": "mentat:decompose"
       },
       {
+        "command": "mentat.decompose_icache",
+        "title": "mentat:decompose (inv. cache)"
+      },
+      {
         "command": "mentat.map_contract",
         "title": "mentat:map_contract"
+      },
+      {
+        "command": "mentat.map_contract_icache",
+        "title": "mentat:map_contract (inv. cache)"
       },
       {
         "command": "mentat.change_model",
@@ -53,20 +65,24 @@
           "group": "mentat@1"
         },
         {
-          "command": "mentat.refresh_tree",
+          "command": "mentat.decompose_icache",
           "group": "mentat@2"
         },
         {
-          "command": "mentat.save_tree",
+          "command": "mentat.refresh_tree",
           "group": "mentat@3"
         },
         {
-          "command": "mentat.load_tree",
+          "command": "mentat.save_tree",
           "group": "mentat@4"
         },
         {
-          "command": "mentat.save_trees",
+          "command": "mentat.load_tree",
           "group": "mentat@5"
+        },
+        {
+          "command": "mentat.save_trees",
+          "group": "mentat@6"
         }
       ],
       "view/item/context": [
@@ -76,10 +92,21 @@
           "group": "mentat@1"
         },
         {
+          "command": "mentat.map_contract_icache",
+          "when": "view == mentat.treeview && viewItem == explanationNodeContract",
+          "group": "mentat@2"
+        },
+        {
           "command": "mentat.explain",
           "when": "(view == mentat.treeview && viewItem == explanationNode) || (view == mentat.treeview && viewItem == explanationNodeContract)",
-          "group": "mentat@2"
+          "group": "mentat@3"
+        },
+        {
+          "command": "mentat.explain_icache",
+          "when": "(view == mentat.treeview && viewItem == explanationNode) || (view == mentat.treeview && viewItem == explanationNodeContract)",
+          "group": "mentat@3"
         }
+
       ]
     },
     "viewsContainers": {
@@ -159,6 +186,12 @@
           "order": 8,
           "default": null,
           "description": "Specified the OpenRouter model to use."
+        },
+        "mentat.openrouter.openrouterMaxTokens": {
+          "type": "integer",
+          "order": 8,
+          "default": 50000,
+          "description": "Maximum number of tokens allowed in the prompt (input+output)."
         },
         "mentat.traceLangsmith.LangsmithEnable": {
           "type": "boolean",

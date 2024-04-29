@@ -23,7 +23,7 @@ Please return the component map in the following format:
 let explain_single_human_str = `
 Please read the following contract:
 --
-{flattened_contract}
+{source}
 --
 And explain the role of the component
 --
@@ -132,7 +132,7 @@ let explain_single_human_xml_str = `
 Please read the following contract:
 
 <flattened_contract_source>
-{flattened_contract}
+{source}
 </flattened_contract_source>
 
 You can use the following explanations of components to help you:

@@ -6,13 +6,15 @@ const OPENROUTER_BASE_URL = 'https://openrouter.ai';
 export class ChatOpenRouterCached extends ChatOpenAI {
 
     constructor(
-        private model_name: string, 
-        private openai_api_key: string|undefined,
+        public modelName: string, 
+        public openAIApiKey: string|undefined,
+        public maxTokens: number,
         public cache: BaseCache|undefined,  
         ) {
         super({
-            openAIApiKey: openai_api_key,
-            modelName: model_name,
+            openAIApiKey: openAIApiKey,
+            modelName: modelName,
+            maxTokens: maxTokens,
             temperature: 0.0,
             cache: cache,
         },
@@ -33,12 +35,13 @@ export class ChatOpenRouterCached extends ChatOpenAI {
 export class ChatOpenRouter extends ChatOpenAI {
 
     constructor(
-        private model_name: string, 
-        private openai_api_key: string|undefined
+        public modelName: string, 
+        public openAIApiKey: string|undefined,
+        public maxTokens: number
         ) {
         super({
-            openAIApiKey: openai_api_key,
-            modelName: model_name,
+            openAIApiKey: openAIApiKey,
+            modelName: modelName,
             temperature: 0.0,
         },
         {

@@ -1,22 +1,21 @@
 import * as vscode from 'vscode';
 import { OpenAI } from 'openai';
-import { ChatOpenAI } from "@langchain/openai";
 import { ChatOpenRouter, ChatOpenRouterCached } from "./openrouter";
-import { parse_flattened_prompt_xml } from './prompts/flattening_prompt';
+import { parse_flattened_prompt_xml } from './prompts/flatten';
 import { explain_single_prompt_xml } from './prompts/explain-single-node';
 import { decompose_flattened_prompt_xml } from './prompts/decompose-contracts';
-import { StringOutputParser } from "@langchain/core/output_parsers";
-import { JsonOutputParser, XMLOutputParser } from "@langchain/core/output_parsers";
+import { extract_source_prompt_xml } from './prompts/extract-sourcecode';
+import { XMLOutputParser } from "@langchain/core/output_parsers";
 import { S3Cache } from "./s3-cache";
 import { bool } from 'aws-sdk/clients/signer';
+import { ExplanationNode, ExplanationNodeContract } from './providers/tree-view-provider';
 
 export class Mentat {
-    private openAiApi?: OpenAI;
     private apiKey?: string;
     private apiModel?: string;
+    private maxTokens?: number;
     private llm_cached?: ChatOpenRouterCached;
     private llm?: ChatOpenRouter;
-    private chain?: any;
     private currentContract?: string;
     private accessKeyId?: string;
     private secretAccessKey?: string;
@@ -93,6 +92,7 @@ export class Mentat {
             this.apiModel = apiModelInput!;
             vscode.workspace.getConfiguration('mentat').update('openrouter.openrouterModelName', this.apiModel)
         }
+        this.maxTokens = vscode.workspace.getConfiguration('mentat').get('openrouter.openrouterMaxTokens');
     }
 
     public async ensureCacheConfig() {
@@ -162,7 +162,7 @@ export class Mentat {
             this.bucket!,
             this.prefix!
             );
-            this.llm_cached = new ChatOpenRouterCached(this.apiModel!, this.apiKey!, cache);
+            this.llm_cached = new ChatOpenRouterCached(this.apiModel!, this.apiKey!, this.maxTokens!, cache);
         }
     }
 
@@ -171,8 +171,17 @@ export class Mentat {
             await this.ensureLangsmith();
             await this.ensureApiKey();
             await this.ensureApiModel();
-            this.llm = new ChatOpenRouter(this.apiModel!, this.apiKey!);
+            this.llm = new ChatOpenRouter(this.apiModel!, this.apiKey!, this.maxTokens!);
         }
+    }
+
+    public async updateModel(model_name: string) {
+        await this.ensureLangsmith();
+        await this.ensureApiKey();
+        await this.ensureApiModel();
+
+        this.llm = new ChatOpenRouter(this.apiModel!, this.apiKey!, this.maxTokens!);
+        this.llm_cached = new ChatOpenRouterCached(this.apiModel!, this.apiKey!, this.maxTokens!, cache);
     }
 
     public async queryMentat(prompt: string): Promise<string> {
@@ -188,18 +197,25 @@ export class Mentat {
 
     public async decomposeFlattenedContract(
         flattened_contract: string, 
-        use_cache: bool = true
+        use_cache: bool = true,
+        inv_cache: bool = false
     ): Promise<Object> {
+        let prompt = decompose_flattened_prompt_xml;
+        let output_parser = new XMLOutputParser();
+
         if(use_cache) {
             await this.ensureLLMCached();
-            this.currentContract = flattened_contract;
             if(this.llm_cached) {
                 // select the proper prompt
                 // combine into a chain with output parser
-                let prompt = decompose_flattened_prompt_xml;
+                
                 let llm = this.llm_cached;
 
-                let output_parser = new XMLOutputParser();
+                // check for cache invalidation
+                if(inv_cache) {
+                    llm.cache.set_invalidate_next();
+                }
+
                 let chain = prompt.pipe(llm).pipe(output_parser);
 
                 // invoke the chain
@@ -213,15 +229,9 @@ export class Mentat {
         }
         else {
             await this.ensureLLM();
-            this.currentContract = flattened_contract;
             if(this.llm) {
-                // select the proper prompt
-                // combine into a chain with output parser
-
-                let prompt = decompose_flattened_prompt_xml;
                 let llm = this.llm;
 
-                let output_parser = new XMLOutputParser();
                 let chain = prompt.pipe(llm).pipe(output_parser);
 
                 // invoke the chain
@@ -237,24 +247,46 @@ export class Mentat {
     }
 
     public async mapContract(
-        contract_source: string, 
-        use_cache: bool = true
+        node: ExplanationNodeContract, 
+        flattened_contract: string,
+        use_cache: bool = true,
+        inv_cache: bool = false
     ): Promise<Object> {
+
+        let prompt_extract = extract_source_prompt_xml;
+        let prompt_parse = parse_flattened_prompt_xml;
+        let output_parser = new XMLOutputParser();
+
         if(use_cache) {
             await this.ensureLLMCached();
             
             if(this.llm_cached) {
-                // select the proper prompt
-                // combine into a chain with output parser
-                let prompt = parse_flattened_prompt_xml;
+                
                 let llm = this.llm_cached;
 
-                let output_parser = new XMLOutputParser();
-                let chain = prompt.pipe(llm).pipe(output_parser);
+                // check for cache invalidation
+                if(inv_cache) {
+                    llm.cache.set_invalidate_next();
+                }
 
-                // invoke the chain
-                let response = await chain.invoke({
-                    "flattened_contract": contract_source,
+                if(node.source === '') {
+                    // extract_source
+                    
+                    let chain_extract = prompt_extract.pipe(llm).pipe(output_parser);
+                    let response_extract = await chain_extract.invoke({
+                        "contract_name": node.label,
+                        "flattened_contract": flattened_contract,
+                    });
+                    // extract the source code
+                    let component = response_extract['response'][1]['components'][0];
+                    let contract_source = component['component'][1]['source_code'];
+                    node.source = contract_source;
+                }
+                // parse
+                
+                let chain_parse = prompt_parse.pipe(llm).pipe(output_parser);
+                let response = await chain_parse.invoke({
+                    "source": node.source,
                 });
                 
                 // return the response
@@ -267,18 +299,26 @@ export class Mentat {
             if(this.llm) {
                 // select the proper prompt
                 // combine into a chain with output parser
-
-                let prompt = parse_flattened_prompt_xml;
                 let llm = this.llm;
 
-                let output_parser = new XMLOutputParser();
-                let chain = prompt.pipe(llm).pipe(output_parser);
-
-                // invoke the chain
-                let response = await chain.invoke({
-                    "flattened_contract": contract_source,
+                if(node.source === '') {
+                    // extract_source
+                    let chain_extract = prompt_extract.pipe(llm).pipe(output_parser);
+                    let response_extract = await chain_extract.invoke({
+                        "contract_name": node.label,
+                        "flattened_contract": flattened_contract,
+                    });
+                    // extract the source code
+                    let component = response_extract['response'][1]['components'][0];
+                    let contract_source = component['component'][1]['source_code'];
+                    node.source = contract_source;
+                }
+                // parse
+                let chain_parse = prompt_parse.pipe(llm).pipe(output_parser);
+                let response = await chain_parse.invoke({
+                    "source": node.source,
                 });
-                
+                                
                 // return the response
                 return response;
             }
@@ -286,81 +326,34 @@ export class Mentat {
         return 'LLM error';    
     }
 
-    public async parseFlattenedContract(
-        flattened_contract: string, 
-        use_cache: bool = true
-    ): Promise<Object> {
-        if(use_cache) {
-            await this.ensureLLMCached();
-            this.currentContract = flattened_contract;
-            if(this.llm_cached) {
-                // select the proper prompt
-                // combine into a chain with output parser
-                //let prompt = parse_flattened_prompt;
-                let prompt = parse_flattened_prompt_xml;
-                let llm = this.llm_cached;
-                //let output_parser = new StringOutputParser();
-                //let output_parser = new JsonOutputParser();
-                let output_parser = new XMLOutputParser();
-                let chain = prompt.pipe(llm).pipe(output_parser);
-
-                // invoke the chain
-                let response = await chain.invoke({
-                    "flattened_contract": flattened_contract,
-                });
-                
-                // return the response
-                return response;
-            }
-        }
-        else {
-            await this.ensureLLM();
-            this.currentContract = flattened_contract;
-            if(this.llm) {
-                // select the proper prompt
-                // combine into a chain with output parser
-                //let prompt = parse_flattened_prompt;
-                let prompt = parse_flattened_prompt_xml;
-                let llm = this.llm;
-                //let output_parser = new StringOutputParser();
-                //let output_parser = new JsonOutputParser();
-                let output_parser = new XMLOutputParser();
-                let chain = prompt.pipe(llm).pipe(output_parser);
-
-                // invoke the chain
-                let response = await chain.invoke({
-                    "flattened_contract": flattened_contract,
-                });
-                
-                // return the response
-                return response;
-            }
-        }
-        return 'LLM error';    
-    }
-
+    
     public async explainNode(
-        node_label: string, 
+        node: ExplanationNode, 
         explanations: string[],
-        use_cache: bool = true
+        use_cache: bool = true,
+        inv_cache: bool = false
     ): Promise<Object> {
+        let prompt = explain_single_prompt_xml;
+        let output_parser = new XMLOutputParser();
         if(use_cache) {
             await this.ensureLLMCached();
             if(this.llm_cached) {
                 // select the proper prompt
                 // combine into a chain with output parser
-                //let prompt = explain_single_prompt;
-                let prompt = explain_single_prompt_xml;
+                
                 let llm = this.llm_cached;
-                //let output_parser = new StringOutputParser();
-                //let output_parser = new JsonOutputParser();
-                let output_parser = new XMLOutputParser();
+
+                // check for cache invalidation
+                if(inv_cache) {
+                    llm.cache.set_invalidate_next();
+                }
+
                 let chain = prompt.pipe(llm).pipe(output_parser);
 
                 // invoke the chain
                 let response = await chain.invoke({
-                    "flattened_contract": this.currentContract,
-                    "component_name": node_label,
+                    "source": node.parent.source,
+                    "component_name": node.label,
                     "component_explanations": explanations
                 });
                 
@@ -373,19 +366,15 @@ export class Mentat {
             if(this.llm) {
                 // select the proper prompt
                 // combine into a chain with output parser
-                //let prompt = explain_single_prompt;
-                let prompt = explain_single_prompt_xml;
+
                 let llm = this.llm;
-                //let output_parser = new StringOutputParser();
-                //let output_parser = new JsonOutputParser();
-                let output_parser = new XMLOutputParser();
+
                 let chain = prompt.pipe(llm).pipe(output_parser);
 
-                //console.log('explanations:', explanations.join('\n--\n'));
                 // invoke the chain
                 let response = await chain.invoke({
-                    "flattened_contract": this.currentContract,
-                    "component_name": node_label,
+                    "source": node.parent.source,
+                    "component_name": node.label,
                     "component_explanations": explanations
                 });
                 
