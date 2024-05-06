@@ -54,8 +54,16 @@
         "title": "mentat:load_tree"
       },
       {
+        "command": "mentat.clear_tree",
+        "title": "mentat:clear_tree"
+      },
+      {
         "command": "mentat.save_trees",
         "title": "mentat:save_trees"
+      },
+      {
+        "command": "mentat.invalidate_trees",
+        "title": "mentat:invalidate_trees"
       }
     ],
     "menus": {
@@ -81,8 +89,16 @@
           "group": "mentat@5"
         },
         {
-          "command": "mentat.save_trees",
+          "command": "mentat.clear_tree",
           "group": "mentat@6"
+        },
+        {
+          "command": "mentat.save_trees",
+          "group": "mentat@7"
+        },
+        {
+          "command": "mentat.invalidate_trees",
+          "group": "mentat@8"
         }
       ],
       "view/item/context": [

@@ -247,7 +247,7 @@ export class Mentat {
     }
 
     public async mapContract(
-        node: ExplanationNodeContract, 
+        node: ExplanationNode, 
         flattened_contract: string,
         use_cache: bool = true,
         inv_cache: bool = false
@@ -269,7 +269,7 @@ export class Mentat {
                     llm.cache.set_invalidate_next();
                 }
 
-                if(node.source === '') {
+                if(!(node.source)) {
                     // extract_source
                     
                     let chain_extract = prompt_extract.pipe(llm).pipe(output_parser);

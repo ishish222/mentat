@@ -1,6 +1,21 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 
+export function map_children_(nodes: Array<ExplanationNode>): void {
+  for (let node of nodes) { 
+    for (let need_ of node.needed) {
+      let need = need_['need'];
+
+      let needed_node = nodes.find((element) => element.label === need);
+      if(needed_node) {
+       node.children.push(needed_node);
+      }
+    }
+    map_children_(node.children);
+  }
+
+}
+
 export class ExplanationNodeProvider implements vscode.TreeDataProvider<ExplanationNode> {
   public tree: ExplanationNode[] = [];
   private _onDidChangeTreeData: vscode.EventEmitter<ExplanationNode | undefined | null | void> = new vscode.EventEmitter<ExplanationNode | undefined | null | void>();
@@ -55,7 +70,7 @@ export class ExplanationNodeProvider implements vscode.TreeDataProvider<Explanat
       arguments: [element]
     };
     
-    if(element instanceof ExplanationNodeContract) {
+    if(element.contextValue == 'explanationNodeContract') {
       this.addIcon(element, true, element.explained);
     }
     else {
@@ -88,7 +103,7 @@ export class ExplanationNodeProvider implements vscode.TreeDataProvider<Explanat
     this.tree = [];
   }
 
-  loadExplanationNodes_xml(contracts: boolean, response_: Object): void {
+  loadExplanationNodes_xml(response_: Object): void {
     // first loop -> listing all components
     let components: Array = response_['response'][1]['components'];
 
@@ -96,87 +111,47 @@ export class ExplanationNodeProvider implements vscode.TreeDataProvider<Explanat
       let component = component_['component'];
 
       let needs: Array<string> = component.length > 2 ? component[2]['needs'] : [];
-      if(contracts) {
-        var node: ExplanationNode = new ExplanationNodeContract(
-          component[0]['name'],
-          vscode.TreeItemCollapsibleState.Collapsed,
-          [],
-          needs,
-          '',
-          false,
-          this,
-          ''
+      if(true) {
+        var node: ExplanationNode = new ExplanationNode(
+          component[0]['name'],                           // label
+          vscode.TreeItemCollapsibleState.Collapsed,      // collapsibleState
+          [],                                             // children (ExplanationNode[])
+          needs,                                          // needs (Array<string>)
+          '',                                             // explanation
+          false,                                          // explained
+          this,                                           // parent (ExplanationNode|null)
+          'explanationNodeContract',                      // contextValue
+          undefined                                       // source
         );
       }
-      else {
-        var node: ExplanationNode = new ExplanationNode(
-          component[0]['name'],
-          vscode.TreeItemCollapsibleState.Collapsed,
-          [],
-          needs,
-          '',
-          false,
-          this
-        );
-      }        
+    
       this.tree.push(node);
-      });
+    });
     
     // second loop -> linking needed components
-    for (let node of this.tree) { 
-      for (let need_ of node.needed) {
-        let need = need_['need'];
-
-        let needed_node = this.tree.find((element) => element.label === need);
-        if(needed_node) {
-         node.children.push(needed_node);
-        }
-      }
-    }
-
-    // third loop -> collapsible or not
+    map_children_(this.tree);
+    
+    // third loop -> collapsible or not, icon 
+    // this might be moved to getTreeItem
     for (let node of this.tree) { 
       if (node.children.length > 0) {
         node.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
       } else {
         node.collapsibleState = vscode.TreeItemCollapsibleState.None;
       }
-      //console.log('Updating icon of node:', node.label);
-      if(contracts) {
-        node.iconPath = {
-          light: this.context.asAbsolutePath(path.join('resources', 'light', 'document-unexplained.svg')),
-          dark: this.context.asAbsolutePath(path.join('resources', 'dark', 'document-unexplained.svg'))
-        };
-      }
-      else {
-        node.iconPath = {
-          light: this.context.asAbsolutePath(path.join('resources', 'light', 'unexplained-icon.svg')),
-          dark: this.context.asAbsolutePath(path.join('resources', 'dark', 'unexplained-icon.svg'))
-        };
-      }
-      //console.log('Updated icon:', this.context.asAbsolutePath(path.join('resources', 'dark', 'ExplanationNode.svg')));
+      
+      node.iconPath = {
+        light: this.context.asAbsolutePath(path.join('resources', 'light', 'document-unexplained.svg')),
+        dark: this.context.asAbsolutePath(path.join('resources', 'dark', 'document-unexplained.svg'))
+      };
+
     }
   }
-
 }
 
 
 export class ExplanationNode extends vscode.TreeItem {
-  constructor(
-    public label: string,
-    public collapsibleState: vscode.TreeItemCollapsibleState,
-    public children: ExplanationNode[] = [],
-    public needed: Array<string> = [],
-    public explanation: string,
-    public explained: boolean = false,
-    public parent: ExplanationNode|null = null
-  ) {
-    super(label, collapsibleState);
-    this.contextValue = 'explanationNode';
-  }
-}
 
-export class ExplanationNodeContract extends ExplanationNode {
   constructor(
     public label: string,
     public collapsibleState: vscode.TreeItemCollapsibleState,
@@ -185,16 +160,16 @@ export class ExplanationNodeContract extends ExplanationNode {
     public explanation: string,
     public explained: boolean = false,
     public parent: ExplanationNode|null = null,
-    public source: string
+    public contextValue: string = 'explanationNode',
+    public source: string|undefined = undefined
   ) {
-    super(label, collapsibleState, children, needed, explanation, explained);
-    this.contextValue = 'explanationNodeContract';
+    super(label, collapsibleState);
   }
 
   clearExplanationNodeContracts() {
     let temp = [];
     for (let child of this.children) {
-      if (child instanceof ExplanationNodeContract) {
+      if (child.contextValue == 'explanationNodeContract') {
         temp.push(child);
       }
     }
@@ -209,15 +184,19 @@ export class ExplanationNodeContract extends ExplanationNode {
       let component = component_['component'];
 
       let needs: Array<string> = component.length > 2 ? component[2]['needs'] : [];
+
       var node: ExplanationNode = new ExplanationNode(
-        component[0]['name'],
-        vscode.TreeItemCollapsibleState.Collapsed,
-        [],
-        needs,
-        '',
-        false,
-        this
+        component[0]['name'],                           // label
+        vscode.TreeItemCollapsibleState.Collapsed,      // collapsibleState
+        [],                                             // children (ExplanationNode[])
+        needs,                                          // needs (Array<string>)
+        '',                                             // explanation
+        false,                                          // explained
+        this,                                           // parent (ExplanationNode|null)
+        'explanationNode',                              // contextValue
+        undefined                                       // source
       );
+
       this.children.push(node);
       //this.explained = true;
       if(this.children.length > 0) {
@@ -227,16 +206,7 @@ export class ExplanationNodeContract extends ExplanationNode {
     });
 
     // second loop -> linking needed components
-    for (let node of this.children) {
-      for (let need_ of node.needed) {
-        let need = need_['need'];
-
-        let needed_node = this.children.find((element) => element.label === need);
-        if (needed_node) {
-          node.children.push(needed_node);
-        }
-      }
-    }
+    map_children_(this.children);
 
     // third loop -> collapsible or not
     for (let node of this.children) {
@@ -247,6 +217,7 @@ export class ExplanationNodeContract extends ExplanationNode {
       }
     }
   }
+
 }
 
 export function serializeNode(node: ExplanationNode, map = new Map()): any {
@@ -262,17 +233,15 @@ export function serializeNode(node: ExplanationNode, map = new Map()): any {
     needed: node.needed,
     explanation: node.explanation,
     explained: node.explained,
-    contextValue: node.contextValue
+    contextValue: node.contextValue,
+    source: node.source
   };
-
-  if (node instanceof ExplanationNodeContract) {
-    serialized['source'] = node.source;
-  }
 
   map.set(node, serialized);
 
   // Serialize children, which might include the current node itself
   serialized.children = node.children.map(child => serializeNode(child, map));
+  // we just use needed property and map
 
   return serialized;
 }
@@ -283,28 +252,17 @@ export function deserializeNode(parent: ExplanationNode|null, serialized: any, m
   //}
 
   let node;
-  if (serialized.contextValue === 'explanationNodeContract') {
-    node = new ExplanationNodeContract(
-      serialized.label,
-      serialized.collapsibleState,
-      [],
-      serialized.needed,
-      serialized.explanation,
-      serialized.explained,
-      parent,
-      serialized.source
-    );
-  } else {
-    node = new ExplanationNode(
-      serialized.label,
-      serialized.collapsibleState,
-      [],
-      serialized.needed,
-      serialized.explanation,
-      serialized.explained,
-      parent
-    );
-  }
+  node = new ExplanationNode(
+    serialized.label,
+    serialized.collapsibleState,
+    [],
+    serialized.needed,
+    serialized.explanation,
+    serialized.explained,
+    parent,
+    serialized.contextValue,
+    serialized.source
+  );
 
   map.set(serialized, node);
 
