@@ -106,7 +106,9 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.commands.registerCommand("mentat.explain_icache", (node) => explain_(node, true)),
 		vscode.commands.registerCommand("mentat.save_tree", () => metntatViewProvider.saveTree()),
 		vscode.commands.registerCommand("mentat.save_trees", () => metntatViewProvider.saveTrees(context)),
+		vscode.commands.registerCommand("mentat.invalidate_trees", () => metntatViewProvider.invalidateTrees(context)),
 		vscode.commands.registerCommand("mentat.load_tree", () => metntatViewProvider.loadTree()),
+		vscode.commands.registerCommand("mentat.clear_tree", () => metntatViewProvider.clearTree()),
 		vscode.commands.registerCommand("node.select", (node) => node_select_(node)),
 	);
 

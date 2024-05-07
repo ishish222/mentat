@@ -3,7 +3,7 @@ import { ChatPromptTemplate } from '@langchain/core/prompts';
 let example_1 = `
 Human:
 
-Please break down the following flattened contract into its components:
+Please break down the following flattened contract (or interface) into its components:
 --
 /** 
  *  SourceUnit: /Users/tsalacinski/Projects/2024-03-07-vscode/solidity-by-example.github.io/contracts/src/app/ether-wallet/EtherWallet.sol
@@ -86,7 +86,7 @@ all contracts mapped.
 
 Examples:
 --
-Example1:
+Example 1:
 ${example_1}
 --
 Please return the component map in the following format:
@@ -125,7 +125,7 @@ Please return the component map in the following format:
 `;
 
 let parse_flattened_human_str = `
-Please break down the following flattened contract into its components:
+Please break down the following flattened contract (or interface) into its components:
 --
 {flattened_contract}
 --
@@ -142,7 +142,7 @@ export const parse_flattened_prompt = ChatPromptTemplate.fromMessages([
 let example_1_xml = `
 Human:
 
-Please break down the following flattened contract into its components:
+Please break down the following flattened contract (or interface) into its components:
 
 <flattened_contract_source>
 
@@ -307,7 +307,7 @@ Please return the component map in the following format:
 
 
 let parse_flattened_human_xml_str = `
-Please break down the following flattened contract into its components:
+Please break down the following flattened contract (or interface) into its components:
 
 <flattened_contract_source>
 {flattened_contract}

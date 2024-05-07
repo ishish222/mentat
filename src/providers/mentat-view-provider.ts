@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { Mentat } from '../mentat';
-import { serializeNode, deserializeNode } from './tree-view-provider';
+import { serializeNode, deserializeNode, map_children_ } from './tree-view-provider';
 import { ExplanationNodeProvider, ExplanationNode, ExplanationNodeContract } from './tree-view-provider';
 const workspace = require("solidity-workspace");
 
@@ -35,15 +35,31 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
                 const serializedTree = JSON.parse(treeJson) as any[];
                 const deserializedTree = serializedTree.map(serializedNode => deserializeNode(null, serializedNode));
                 this.treeDataProvider.tree = deserializedTree;
+                map_children_(this.treeDataProvider.tree);
                 this.treeDataProvider.refresh();
             }
+        }
+        else {
+            this.treeDataProvider.tree = [];
+            this.treeDataProvider.refresh();
         }
     }
 
     public async saveTrees(context: vscode.ExtensionContext) {
+        this.saveTree();
         const treeData = Array.from(this.trees.entries());
         const serializedData = JSON.stringify(treeData);
         context.globalState.update('trees', serializedData);
+    }
+
+    public async invalidateTrees(context: vscode.ExtensionContext) {
+        context.globalState.update('trees', undefined);
+        this.loadTrees(context);
+    }
+
+    public async clearTree() {
+        this.treeDataProvider.tree = [];
+        this.treeDataProvider.refresh();
     }
 
     public async loadTrees(context: vscode.ExtensionContext) {
@@ -52,7 +68,7 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
             const treeData = JSON.parse(serializedData) as Array<[string, string]>;
             const trees = new Map<string, string>(treeData);
             this.trees = trees;
-    
+            
             // If needed, load the tree for the current document
             this.loadTree();
         }
@@ -133,7 +149,7 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
         let output = await this.mentat.decomposeFlattenedContract(this.currentFlattenedContract, use_cache, inv_cache);
 
         this.treeDataProvider.clearExplanationNodes();
-        this.treeDataProvider.loadExplanationNodes_xml(true, output);
+        this.treeDataProvider.loadExplanationNodes_xml(output);
         this.treeDataProvider.refresh();
 
         this.sendMessageToWebView({ 
@@ -143,7 +159,7 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
     }
 
     public async mapContract(
-        node: ExplanationNodeContract,
+        node: ExplanationNode,
         use_cache: boolean = true,
         inv_cache: boolean = false
     )
