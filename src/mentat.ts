@@ -301,7 +301,7 @@ export class Mentat {
                 // combine into a chain with output parser
                 let llm = this.llm;
 
-                if(node.source === '') {
+                if(!(node.source)) {
                     // extract_source
                     let chain_extract = prompt_extract.pipe(llm).pipe(output_parser);
                     let response_extract = await chain_extract.invoke({

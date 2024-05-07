@@ -46,6 +46,7 @@ export default class MentatViewProvider implements vscode.WebviewViewProvider {
     }
 
     public async saveTrees(context: vscode.ExtensionContext) {
+        this.saveTree();
         const treeData = Array.from(this.trees.entries());
         const serializedData = JSON.stringify(treeData);
         context.globalState.update('trees', serializedData);

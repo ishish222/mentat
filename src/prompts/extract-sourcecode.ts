@@ -5,7 +5,7 @@ Human:
 
 
 
-Please extract the source code of the contract MainchainGatewayManager from the following flattened contract source code:
+Please extract the source code of the contract (or interface) MainchainGatewayManager from the following flattened contract source code:
 
 <flattened_contract_source>
 
@@ -1568,7 +1568,7 @@ Please return the contract map in the following format:
 
 
 let extract_source_human_xml_str = `
-Please extract the source code of the contract {contract_name} from the following flattened contract source code:
+Please extract the source code of the contract (or interface) {contract_name} from the following flattened contract source code:
 
 <flattened_contract_source>
 {flattened_contract}

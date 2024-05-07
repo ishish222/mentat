@@ -110,7 +110,12 @@ export class ExplanationNodeProvider implements vscode.TreeDataProvider<Explanat
     components.forEach((component_: Object) => {
       let component = component_['component'];
 
-      let needs: Array<string> = component.length > 2 ? component[2]['needs'] : [];
+      let needs: Array<string> = [];
+      if(Array.isArray(component[1].needs))
+      {
+        needs = component[1].needs;
+      }
+      
       if(true) {
         var node: ExplanationNode = new ExplanationNode(
           component[0]['name'],                           // label
@@ -184,7 +189,6 @@ export class ExplanationNode extends vscode.TreeItem {
       let component = component_['component'];
 
       let needs: Array<string> = component.length > 2 ? component[2]['needs'] : [];
-
       var node: ExplanationNode = new ExplanationNode(
         component[0]['name'],                           // label
         vscode.TreeItemCollapsibleState.Collapsed,      // collapsibleState
@@ -197,8 +201,10 @@ export class ExplanationNode extends vscode.TreeItem {
         undefined                                       // source
       );
 
-      this.children.push(node);
-      //this.explained = true;
+      if(component[0]['name'] != this.label) {
+        this.children.push(node);
+      }
+
       if(this.children.length > 0) {
         this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
       }
